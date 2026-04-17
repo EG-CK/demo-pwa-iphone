@@ -1,19 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0%" stop-color="#125046"/>
-      <stop offset="100%" stop-color="#0f5f4b"/>
+      <stop offset="0%" stop-color="#0a2e52"/>
+      <stop offset="55%" stop-color="#0f5f4b"/>
+      <stop offset="100%" stop-color="#f08a3e"/>
     </linearGradient>
-    <linearGradient id="bars" x1="0" x2="0" y1="0" y2="1">
-      <stop offset="0%" stop-color="#ef8e45"/>
-      <stop offset="100%" stop-color="#f5d77d"/>
+    <linearGradient id="card" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.96"/>
+      <stop offset="100%" stop-color="#d8f0e8" stop-opacity="0.92"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ffb36b"/>
+      <stop offset="100%" stop-color="#f08a3e"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
-  <circle cx="398" cy="116" r="58" fill="#ffffff" opacity="0.08"/>
-  <path d="M120 348c0-10 8-18 18-18h24c10 0 18 8 18 18v60c0 10-8 18-18 18h-24c-10 0-18-8-18-18z" fill="url(#bars)"/>
-  <path d="M220 278c0-10 8-18 18-18h24c10 0 18 8 18 18v130c0 10-8 18-18 18h-24c-10 0-18-8-18-18z" fill="url(#bars)"/>
-  <path d="M320 208c0-10 8-18 18-18h24c10 0 18 8 18 18v200c0 10-8 18-18 18h-24c-10 0-18-8-18-18z" fill="url(#bars)"/>
-  <path d="M134 182c10-52 51-92 104-102 39-7 79 2 111 24" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-width="26"/>
-  <path d="M332 84h64v64" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="24"/>
+  <rect width="512" height="512" rx="120" fill="url(#bg)"/>
+  <circle cx="396" cy="112" r="66" fill="#ffffff" opacity="0.08"/>
+  <circle cx="116" cy="410" r="88" fill="#ffffff" opacity="0.07"/>
+  <rect x="96" y="108" width="320" height="296" rx="42" fill="url(#card)"/>
+  <rect x="126" y="144" width="260" height="28" rx="14" fill="#0f5f4b" opacity="0.14"/>
+  <rect x="128" y="214" width="64" height="128" rx="22" fill="#0f5f4b"/>
+  <rect x="224" y="186" width="64" height="156" rx="22" fill="#1e7f69"/>
+  <rect x="320" y="156" width="64" height="186" rx="22" fill="url(#accent)"/>
+  <path d="M136 376h240" stroke="#0f5f4b" stroke-linecap="round" stroke-width="18" opacity="0.18"/>
+  <path d="M144 310c32-42 68-64 108-64 35 0 64 10 114 38" fill="none" stroke="#0a2e52" stroke-linecap="round" stroke-width="18"/>
+  <circle cx="144" cy="310" r="14" fill="#0a2e52"/>
+  <circle cx="252" cy="246" r="14" fill="#0a2e52"/>
+  <circle cx="366" cy="284" r="14" fill="#0a2e52"/>
 </svg>

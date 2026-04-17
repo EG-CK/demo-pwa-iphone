@@ -1,51 +1,31 @@
 (function () {
   const MAX_TONS = 10;
-  const LINES = ["Rolling", "Bombos", "Aduana"];
+  const LINES = ["Rolling", "Bombos"];
   const SHIFTS = ["A", "B", "C"];
   const TODAY = new Date("2026-04-17T12:00:00");
   const HISTORY_DAYS = 61;
-  const PERIOD_LABELS = {
-    shift: "Turno",
-    day: "Dia",
-    week: "Semana"
-  };
 
   const state = {
-    period: "shift",
-    line: "Rolling",
-    referenceIndex: 0,
-    shift: "A"
+    Rolling: { referenceIndex: 0, shift: "A" },
+    Bombos: { referenceIndex: 0, shift: "A" }
   };
 
   const elements = {
-    lineSelect: document.getElementById("lineSelect"),
-    referenceSelect: document.getElementById("referenceSelect"),
-    shiftSelect: document.getElementById("shiftSelect"),
-    summaryTitle: document.getElementById("summaryTitle"),
-    summaryDate: document.getElementById("summaryDate"),
-    oeeValue: document.getElementById("oeeValue"),
-    oeeHint: document.getElementById("oeeHint"),
-    unitsValue: document.getElementById("unitsValue"),
-    unitsHint: document.getElementById("unitsHint"),
-    stopsValue: document.getElementById("stopsValue"),
+    lineBoards: document.getElementById("lineBoards"),
     trendChart: document.getElementById("trendChart"),
     trendNote: document.getElementById("trendNote"),
-    comparisonCards: document.getElementById("comparisonCards"),
-    insightList: document.getElementById("insightList"),
-    installState: document.getElementById("installState"),
-    periodButtons: Array.from(document.querySelectorAll("[data-period]"))
+    installState: document.getElementById("installState")
   };
 
   const dailyHistory = buildHistory();
+  const dayOptions = getDayOptions();
 
   init();
 
   function init() {
-    populateLineSelect();
-    populateReferenceSelect();
-    populateShiftSelect();
+    renderBoards();
+    renderTrendOverview();
     bindEvents();
-    render();
     registerServiceWorker();
     updateInstallState();
   }
@@ -65,7 +45,7 @@
         SHIFTS.forEach(function (shiftName, shiftIndex) {
           const tons = computeTons(date, lineIndex, shiftIndex);
           const oee = Math.round((tons / MAX_TONS) * 100);
-          const stops = Math.max(0, Math.round((100 - oee) * 1.35 + shiftIndex * 4 + lineIndex * 3));
+          const stops = Math.max(0, Math.round((100 - oee) * 1.35 + shiftIndex * 5 + lineIndex * 4));
 
           shifts[shiftName] = {
             tons: round(tons, 1),
@@ -89,7 +69,6 @@
       history.push({
         key: formatDateKey(date),
         date,
-        weekKey: getWeekKey(date),
         lines: lineValues
       });
     }
@@ -99,107 +78,15 @@
 
   function computeTons(date, lineIndex, shiftIndex) {
     const daySeed = Math.floor((date.getTime() / 86400000) % 97);
-    const base = 5.8 + (2.1 * Math.sin((daySeed + lineIndex * 4) / 4.5));
-    const seasonal = 1.6 * Math.cos((daySeed + shiftIndex * 5) / 6.2);
-    const lineBias = [1.1, -0.4, -1.0][lineIndex];
-    const shiftBias = [0.6, 0.15, -0.7][shiftIndex];
-    const tons = base + seasonal + lineBias + shiftBias;
-    return clamp(tons, 0, MAX_TONS);
+    const base = 5.9 + (2.0 * Math.sin((daySeed + lineIndex * 5) / 4.8));
+    const seasonal = 1.5 * Math.cos((daySeed + shiftIndex * 4) / 6.1);
+    const lineBias = [0.9, -0.2][lineIndex];
+    const shiftBias = [0.55, 0.1, -0.65][shiftIndex];
+    return clamp(base + seasonal + lineBias + shiftBias, 0, MAX_TONS);
   }
 
-  function populateLineSelect() {
-    elements.lineSelect.innerHTML = LINES.map(function (line) {
-      return '<option value="' + line + '">' + line + "</option>";
-    }).join("");
-    elements.lineSelect.value = state.line;
-  }
-
-  function populateReferenceSelect() {
-    const options = getReferenceOptions(state.period);
-    elements.referenceSelect.innerHTML = options.map(function (option, index) {
-      return '<option value="' + index + '">' + option.label + "</option>";
-    }).join("");
-    state.referenceIndex = 0;
-    elements.referenceSelect.value = "0";
-  }
-
-  function populateShiftSelect() {
-    elements.shiftSelect.innerHTML = SHIFTS.map(function (shift) {
-      return '<option value="' + shift + '">Turno ' + shift + "</option>";
-    }).join("");
-    elements.shiftSelect.value = state.shift;
-    elements.shiftSelect.disabled = state.period !== "shift";
-  }
-
-  function bindEvents() {
-    elements.periodButtons.forEach(function (button) {
-      button.addEventListener("click", function () {
-        state.period = button.dataset.period;
-        elements.periodButtons.forEach(function (candidate) {
-          candidate.classList.toggle("is-active", candidate === button);
-        });
-        populateReferenceSelect();
-        populateShiftSelect();
-        render();
-      });
-    });
-
-    elements.lineSelect.addEventListener("change", function (event) {
-      state.line = event.target.value;
-      render();
-    });
-
-    elements.referenceSelect.addEventListener("change", function (event) {
-      state.referenceIndex = Number(event.target.value);
-      render();
-    });
-
-    elements.shiftSelect.addEventListener("change", function (event) {
-      state.shift = event.target.value;
-      render();
-    });
-  }
-
-  function render() {
-    const current = getCurrentMetric(state.line, state.period, state.referenceIndex, state.shift);
-    const comparison = LINES.map(function (line) {
-      return getCurrentMetric(line, state.period, state.referenceIndex, state.shift);
-    });
-    const trend = getTrendSeries(state.line, state.period, state.shift);
-
-    elements.summaryTitle.textContent = state.line + " · " + buildTitleSuffix();
-    elements.summaryDate.textContent = current.label;
-    elements.oeeValue.textContent = current.oee + "%";
-    elements.oeeHint.textContent = current.oee >= 85 ? "Por encima del objetivo" : "Objetivo 85%";
-    elements.unitsValue.textContent = formatTons(current.tons);
-    elements.unitsHint.textContent = state.period === "shift" ? "Max. 10 T" : state.period === "day" ? "Max. 30 T" : "Agregado semanal";
-    elements.stopsValue.textContent = current.stops + " min";
-    elements.trendNote.textContent = PERIOD_LABELS[state.period] + " seleccionado";
-
-    renderTrendChart(trend);
-    renderComparison(comparison);
-    renderInsights(current, comparison);
-  }
-
-  function getReferenceOptions(period) {
-    if (period === "week") {
-      const seen = new Set();
-      const options = [];
-      for (let i = dailyHistory.length - 1; i >= 0; i -= 1) {
-        const entry = dailyHistory[i];
-        if (!seen.has(entry.weekKey)) {
-          seen.add(entry.weekKey);
-          options.push({
-            key: entry.weekKey,
-            label: "Semana " + entry.weekKey.split("-W")[1] + " · " + entry.date.getFullYear()
-          });
-        }
-      }
-      return options;
-    }
-
-    const latest = dailyHistory.slice().reverse();
-    return latest.map(function (entry) {
+  function getDayOptions() {
+    return dailyHistory.slice().reverse().map(function (entry) {
       return {
         key: entry.key,
         label: formatLongDate(entry.date)
@@ -207,178 +94,181 @@
     });
   }
 
-  function getCurrentMetric(line, period, referenceIndex, shift) {
-    const options = getReferenceOptions(period);
-    const selected = options[referenceIndex] || options[0];
+  function bindEvents() {
+    elements.lineBoards.addEventListener("change", function (event) {
+      const line = event.target.dataset.line;
+      const control = event.target.dataset.control;
+      if (!line || !control) {
+        return;
+      }
 
-    if (period === "shift") {
-      const entry = dailyHistory.find(function (item) {
-        return item.key === selected.key;
-      });
-      const value = entry.lines[line].shifts[shift];
-      return {
-        line,
-        tons: value.tons,
-        oee: value.oee,
-        stops: value.stops,
-        label: selected.label
-      };
-    }
+      if (control === "date") {
+        state[line].referenceIndex = Number(event.target.value);
+      }
 
-    if (period === "day") {
-      const entry = dailyHistory.find(function (item) {
-        return item.key === selected.key;
-      });
-      const value = entry.lines[line].day;
-      return {
-        line,
-        tons: value.tons,
-        oee: value.oee,
-        stops: value.stops,
-        label: selected.label
-      };
-    }
+      if (control === "shift") {
+        state[line].shift = event.target.value;
+      }
 
-    const weekEntries = dailyHistory.filter(function (item) {
-      return item.weekKey === selected.key;
-    });
-    const summary = summarizeEntries(weekEntries, line);
-    return {
-      line,
-      tons: summary.tons,
-      oee: summary.oee,
-      stops: summary.stops,
-      label: selected.label
-    };
-  }
-
-  function summarizeEntries(entries, line) {
-    const total = entries.reduce(function (acc, entry) {
-      acc.tons += entry.lines[line].day.tons;
-      acc.stops += entry.lines[line].day.stops;
-      return acc;
-    }, { tons: 0, stops: 0 });
-    const capacity = Math.max(entries.length * MAX_TONS * SHIFTS.length, 1);
-    return {
-      tons: round(total.tons, 1),
-      oee: clamp(Math.round((total.tons / capacity) * 100), 0, 100),
-      stops: total.stops
-    };
-  }
-
-  function getTrendSeries(line, period, shift) {
-    if (period === "week") {
-      const grouped = getReferenceOptions("week").map(function (option) {
-        const entries = dailyHistory.filter(function (item) {
-          return item.weekKey === option.key;
-        });
-        const summary = summarizeEntries(entries, line);
-        return {
-          label: option.label.replace("Semana ", "S"),
-          value: summary.oee,
-          tons: summary.tons
-        };
-      });
-      return grouped.slice(-8);
-    }
-
-    const recent = dailyHistory.slice(-14);
-    return recent.map(function (entry) {
-      const source = period === "shift" ? entry.lines[line].shifts[shift] : entry.lines[line].day;
-      return {
-        label: pad(entry.date.getDate()),
-        value: source.oee,
-        tons: source.tons
-      };
+      renderBoards();
+      renderTrendOverview();
     });
   }
 
-  function renderTrendChart(series) {
-    const max = Math.max.apply(null, series.map(function (item) { return item.value; }).concat([100]));
+  function renderBoards() {
+    elements.lineBoards.innerHTML = LINES.map(function (line) {
+      const selection = state[line];
+      const snapshot = getSnapshot(line, selection.referenceIndex, selection.shift);
+      const dayDetail = getDayBreakdown(line, selection.referenceIndex);
+
+      return [
+        '<section class="panel line-board">',
+        '<div class="line-board__head">',
+        '<div>',
+        '<p class="section-label">Linea</p>',
+        '<h2>', line, '</h2>',
+        '<p class="mini-note">Cambia fecha y turno directamente en esta tabla</p>',
+        '</div>',
+        '<div class="line-board__score">', snapshot.oee, '% OEE</div>',
+        '</div>',
+        '<div class="field-grid line-board__filters">',
+        '<div class="field-group">',
+        '<label for="date-', line, '">Fecha</label>',
+        '<select id="date-', line, '" data-line="', line, '" data-control="date">',
+        dayOptions.map(function (option, index) {
+          return '<option value="' + index + '"' + (selection.referenceIndex === index ? ' selected' : '') + '>' + option.label + '</option>';
+        }).join(""),
+        '</select>',
+        '</div>',
+        '<div class="field-group">',
+        '<label for="shift-', line, '">Turno</label>',
+        '<select id="shift-', line, '" data-line="', line, '" data-control="shift">',
+        SHIFTS.map(function (shift) {
+          return '<option value="' + shift + '"' + (selection.shift === shift ? ' selected' : '') + '>Turno ' + shift + '</option>';
+        }).join(""),
+        '</select>',
+        '</div>',
+        '</div>',
+        '<div class="kpi-grid">',
+        renderKpi("OEE", snapshot.oee + "%", snapshot.oee >= 85 ? "Sobre objetivo" : "Objetivo 85%"),
+        renderKpi("Produccion", formatTons(snapshot.tons), "Max. 10 T por turno"),
+        renderKpi("Paradas", snapshot.stops + " min", "No planificadas"),
+        '</div>',
+        '<div class="table-card">',
+        '<table class="data-table">',
+        '<thead><tr><th>Vista</th><th>OEE</th><th>Toneladas</th><th>Paradas</th></tr></thead>',
+        '<tbody>',
+        renderRow("Turno " + selection.shift, snapshot),
+        renderRow("Total dia", dayDetail.day, "is-muted"),
+        renderRow("Mejor turno", dayDetail.best, "is-good"),
+        renderRow("Peor turno", dayDetail.worst, "is-bad"),
+        '</tbody>',
+        '</table>',
+        '</div>',
+        '</section>'
+      ].join("");
+    }).join("");
+  }
+
+  function renderTrendOverview() {
+    const rollingSeries = getTrendSeries("Rolling");
+    const bombosSeries = getTrendSeries("Bombos");
+    const latestRolling = rollingSeries[rollingSeries.length - 1];
+    const latestBombos = bombosSeries[bombosSeries.length - 1];
+    const series = LINES.map(function (line) {
+      const current = line === "Rolling" ? latestRolling : latestBombos;
+      return {
+        label: line,
+        value: current.oee,
+        tons: current.tons
+      };
+    });
+
+    elements.trendNote.textContent = "Ultimo dia disponible";
     elements.trendChart.innerHTML = series.map(function (item) {
-      const height = Math.max(8, Math.round((item.value / max) * 150));
+      const height = Math.max(18, Math.round((item.value / 100) * 150));
       return [
-        '<div class="chart__bar" title="',
-        item.label,
-        ": ",
-        item.value,
-        "% · ",
-        formatTons(item.tons),
-        '">',
-        '<div class="chart__track"><div class="chart__fill" style="height:',
-        height,
-        'px"></div></div>',
-        '<div class="chart__label">',
-        item.label,
-        "</div></div>"
+        '<div class="chart__bar" title="', item.label, ": ", item.value, "% | ", formatTons(item.tons), '">',
+        '<div class="chart__track"><div class="chart__fill" style="height:', height, 'px"></div></div>',
+        '<div class="chart__label chart__label--strong">', item.label, '</div>',
+        '<div class="chart__label">', item.value, '%</div>',
+        '</div>'
       ].join("");
     }).join("");
   }
 
-  function renderComparison(comparison) {
-    const leader = comparison.reduce(function (best, current) {
-      return current.oee > best.oee ? current : best;
-    }, comparison[0]);
-
-    elements.comparisonCards.innerHTML = comparison.map(function (item) {
-      return [
-        '<article class="line-card">',
-        '<div class="line-card__top">',
-        "<div>",
-        '<p class="line-card__title">',
-        item.line || inferLine(item),
-        "</p>",
-        '<p class="line-card__sub">',
-        item.label,
-        "</p>",
-        "</div>",
-        '<p class="line-card__value">',
-        item.oee,
-        "%</p>",
-        "</div>",
-        '<div class="line-card__meta">',
-        "<span>",
-        formatTons(item.tons),
-        "</span>",
-        "<span>",
-        item.stops,
-        " min</span>",
-        "</div>",
-        '<div class="progress"><div class="progress__fill" style="width:',
-        item.oee,
-        '%"></div></div>',
-        leader.oee === item.oee ? '<p class="line-card__sub">Linea lider del periodo</p>' : "",
-        "</article>"
-      ].join("");
-    }).join("");
+  function getSnapshot(line, referenceIndex, shift) {
+    const selected = dayOptions[referenceIndex] || dayOptions[0];
+    const entry = dailyHistory.find(function (item) {
+      return item.key === selected.key;
+    });
+    const value = entry.lines[line].shifts[shift];
+    return {
+      label: selected.label,
+      tons: value.tons,
+      oee: value.oee,
+      stops: value.stops
+    };
   }
 
-  function renderInsights(current, comparison) {
-    const sorted = comparison.slice().sort(function (a, b) {
+  function getDayBreakdown(line, referenceIndex) {
+    const selected = dayOptions[referenceIndex] || dayOptions[0];
+    const entry = dailyHistory.find(function (item) {
+      return item.key === selected.key;
+    });
+    const shifts = SHIFTS.map(function (shift) {
+      return {
+        label: "Turno " + shift,
+        tons: entry.lines[line].shifts[shift].tons,
+        oee: entry.lines[line].shifts[shift].oee,
+        stops: entry.lines[line].shifts[shift].stops
+      };
+    });
+    const ordered = shifts.slice().sort(function (a, b) {
       return b.oee - a.oee;
     });
-    const leader = sorted[0];
-    const lagger = sorted[sorted.length - 1];
-    const insights = [
-      state.line + " registra " + current.oee + "% OEE y " + formatTons(current.tons) + " en " + current.label + ".",
-      "La linea lider es " + inferLine(leader) + " con " + leader.oee + "% OEE.",
-      inferLine(lagger) + " necesita recuperar ritmo: se queda en " + lagger.oee + "% OEE y " + lagger.stops + " min de paradas.",
-      current.oee >= 85 ? "El periodo seleccionado esta en zona objetivo." : "El periodo seleccionado queda por debajo del objetivo del 85%."
-    ];
-    elements.insightList.innerHTML = insights.map(function (item) {
-      return "<li>" + item + "</li>";
-    }).join("");
+
+    return {
+      day: {
+        label: selected.label,
+        tons: entry.lines[line].day.tons,
+        oee: entry.lines[line].day.oee,
+        stops: entry.lines[line].day.stops
+      },
+      best: ordered[0],
+      worst: ordered[ordered.length - 1]
+    };
   }
 
-  function inferLine(metric) {
-    return metric.line || "Linea";
+  function getTrendSeries(line) {
+    return dailyHistory.slice(-14).map(function (entry) {
+      return {
+        label: pad(entry.date.getDate()),
+        tons: entry.lines[line].day.tons,
+        oee: entry.lines[line].day.oee
+      };
+    });
   }
 
-  function buildTitleSuffix() {
-    if (state.period === "shift") {
-      return "Turno " + state.shift;
-    }
-    return PERIOD_LABELS[state.period];
+  function renderKpi(label, value, hint) {
+    return [
+      '<article class="kpi-card">',
+      '<p class="kpi-card__label">', label, '</p>',
+      '<p class="kpi-card__value">', value, '</p>',
+      '<p class="kpi-card__hint">', hint, '</p>',
+      '</article>'
+    ].join("");
+  }
+
+  function renderRow(label, metric, className) {
+    return [
+      '<tr class="', className || '', '">',
+      '<td>', label, '</td>',
+      '<td>', metric.oee, '%</td>',
+      '<td>', formatTons(metric.tons), '</td>',
+      '<td>', metric.stops, ' min</td>',
+      '</tr>'
+    ].join("");
   }
 
   function registerServiceWorker() {
@@ -399,20 +289,8 @@
     return pad(date.getDate()) + " " + months[date.getMonth()] + " " + date.getFullYear();
   }
 
-  function getWeekKey(date) {
-    const temp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    temp.setUTCDate(temp.getUTCDate() + 4 - (temp.getUTCDay() || 7));
-    const yearStart = new Date(Date.UTC(temp.getUTCFullYear(), 0, 1));
-    const weekNo = Math.ceil((((temp - yearStart) / 86400000) + 1) / 7);
-    return temp.getUTCFullYear() + "-W" + pad(weekNo);
-  }
-
   function formatDateKey(date) {
-    return [
-      date.getFullYear(),
-      pad(date.getMonth() + 1),
-      pad(date.getDate())
-    ].join("-");
+    return [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join("-");
   }
 
   function formatTons(value) {
