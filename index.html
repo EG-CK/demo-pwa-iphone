@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f5f4b">
+  <meta name="description" content="Demo PWA de productividad por linea, turno, dia y semana.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-app.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.svg">
+  <link rel="stylesheet" href="styles.css">
+  <title>Pulse OEE Demo</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div class="hero__copy">
+        <p class="eyebrow">Demo local instalable</p>
+        <h1>Pulse OEE</h1>
+        <p class="hero__text">
+          Seguimiento de productividad con datos inventados para Rolling, Bombos y Aduana.
+        </p>
+      </div>
+      <div class="hero__badge" id="installState">PWA lista</div>
+    </header>
+
+    <main class="content">
+      <section class="panel panel--filters">
+        <div class="segmented" aria-label="Periodo">
+          <button class="segmented__button is-active" data-period="shift">Turno</button>
+          <button class="segmented__button" data-period="day">Dia</button>
+          <button class="segmented__button" data-period="week">Semana</button>
+        </div>
+
+        <div class="field-group">
+          <label for="lineSelect">Linea</label>
+          <select id="lineSelect"></select>
+        </div>
+
+        <div class="field-grid">
+          <div class="field-group">
+            <label for="referenceSelect">Referencia</label>
+            <select id="referenceSelect"></select>
+          </div>
+          <div class="field-group">
+            <label for="shiftSelect">Turno</label>
+            <select id="shiftSelect"></select>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel panel--summary">
+        <div class="summary-header">
+          <div>
+            <p class="section-label">Resumen</p>
+            <h2 id="summaryTitle">Rolling · Turno A</h2>
+          </div>
+          <p class="summary-date" id="summaryDate"></p>
+        </div>
+
+        <div class="kpi-grid">
+          <article class="kpi-card">
+            <p class="kpi-card__label">OEE</p>
+            <p class="kpi-card__value" id="oeeValue">0%</p>
+            <p class="kpi-card__hint" id="oeeHint">Objetivo 85%</p>
+          </article>
+          <article class="kpi-card">
+            <p class="kpi-card__label">Produccion</p>
+            <p class="kpi-card__value" id="unitsValue">0.0 T</p>
+            <p class="kpi-card__hint" id="unitsHint">Max. 10 T</p>
+          </article>
+          <article class="kpi-card">
+            <p class="kpi-card__label">Paradas</p>
+            <p class="kpi-card__value" id="stopsValue">0 min</p>
+            <p class="kpi-card__hint">No planificadas</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <p class="section-label">Historico</p>
+            <h2>Tendencia de 2 meses</h2>
+          </div>
+          <p class="mini-note" id="trendNote"></p>
+        </div>
+        <div class="chart-card">
+          <div class="chart" id="trendChart" aria-label="Grafico de tendencia"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <p class="section-label">Comparativa</p>
+            <h2>Las 3 lineas</h2>
+          </div>
+        </div>
+        <div class="line-comparison" id="comparisonCards"></div>
+      </section>
+
+      <section class="panel panel--insights">
+        <div class="section-head">
+          <div>
+            <p class="section-label">Insights</p>
+            <h2>Lectura rapida</h2>
+          </div>
+        </div>
+        <ul class="insight-list" id="insightList"></ul>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
