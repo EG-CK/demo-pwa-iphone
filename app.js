@@ -4,17 +4,39 @@
   const SHIFTS = ["A", "B", "C"];
   const TODAY = new Date("2026-04-17T12:00:00");
   const HISTORY_DAYS = 61;
+  const QR_DB_NAME = "pulse-oee-qr-db";
+  const QR_STORE_NAME = "qrRecords";
+  const QR_MAX_RECORDS = 30;
 
   const state = {
     Rolling: { referenceIndex: 0, shift: "A" },
-    Bombos: { referenceIndex: 0, shift: "A" }
+    Bombos: { referenceIndex: 0, shift: "A" },
+    qr: {
+      records: [],
+      db: null,
+      scanning: false,
+      detector: null,
+      stream: null,
+      frameRequest: null,
+      lastValue: "",
+      lastSavedAt: 0
+    }
   };
 
   const elements = {
     lineBoards: document.getElementById("lineBoards"),
     trendChart: document.getElementById("trendChart"),
     trendNote: document.getElementById("trendNote"),
-    installState: document.getElementById("installState")
+    installState: document.getElementById("installState"),
+    qrLine: document.getElementById("qrLine"),
+    qrShift: document.getElementById("qrShift"),
+    qrVideo: document.getElementById("qrVideo"),
+    qrStatus: document.getElementById("qrStatus"),
+    qrCount: document.getElementById("qrCount"),
+    qrRecordsBody: document.getElementById("qrRecordsBody"),
+    startScanButton: document.getElementById("startScanButton"),
+    stopScanButton: document.getElementById("stopScanButton"),
+    qrImageInput: document.getElementById("qrImageInput")
   };
 
   const dailyHistory = buildHistory();
@@ -22,12 +44,27 @@
 
   init();
 
-  function init() {
+  async function init() {
     renderBoards();
     renderTrendOverview();
     bindEvents();
     registerServiceWorker();
     updateInstallState();
+    updateQrStatus("Inicializando base de datos local...");
+    updateScannerControls();
+
+    try {
+      state.qr.db = await openQrDb();
+      state.qr.records = await loadQrRecords(state.qr.db);
+      state.qr.detector = createQrDetector();
+      renderQrRecords();
+      updateQrStatus(state.qr.detector ? "Listo para iniciar el escaneo." : "Este navegador no permite leer QR en directo. Puedes probar con una imagen.");
+    } catch (error) {
+      updateQrStatus("No se pudo abrir la base de datos local.");
+      renderQrRecords();
+    } finally {
+      updateScannerControls();
+    }
   }
 
   function buildHistory() {
@@ -113,6 +150,19 @@
       renderBoards();
       renderTrendOverview();
     });
+
+    elements.startScanButton.addEventListener("click", function () {
+      startQrScan();
+    });
+
+    elements.stopScanButton.addEventListener("click", function () {
+      stopQrScan("Escaneo detenido.");
+    });
+
+    elements.qrImageInput.addEventListener("change", function (event) {
+      handleQrImage(event.target.files && event.target.files[0]);
+      event.target.value = "";
+    });
   }
 
   function renderBoards() {
@@ -195,6 +245,261 @@
         '</div>'
       ].join("");
     }).join("");
+  }
+
+  function renderQrRecords() {
+    const records = state.qr.records.slice(0, QR_MAX_RECORDS);
+    elements.qrCount.textContent = records.length + " lecturas";
+
+    if (!records.length) {
+      elements.qrRecordsBody.innerHTML = '<tr class="is-muted"><td colspan="4">Todavia no hay lecturas guardadas.</td></tr>';
+      return;
+    }
+
+    elements.qrRecordsBody.innerHTML = records.map(function (record) {
+      return [
+        "<tr>",
+        "<td>", formatQrTimestamp(record.createdAt), "</td>",
+        "<td>", escapeHtml(record.line), "</td>",
+        "<td>", escapeHtml(record.shift), "</td>",
+        "<td>", escapeHtml(record.value), "</td>",
+        "</tr>"
+      ].join("");
+    }).join("");
+  }
+
+  function updateScannerControls() {
+    const disabled = !state.qr.db;
+    elements.startScanButton.disabled = disabled || state.qr.scanning;
+    elements.stopScanButton.disabled = !state.qr.scanning;
+  }
+
+  function updateQrStatus(message) {
+    elements.qrStatus.textContent = message;
+  }
+
+  function createQrDetector() {
+    if (!("BarcodeDetector" in window)) {
+      return null;
+    }
+
+    try {
+      return new window.BarcodeDetector({ formats: ["qr_code"] });
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async function startQrScan() {
+    if (!state.qr.db) {
+      updateQrStatus("La base de datos local todavia no esta disponible.");
+      return;
+    }
+
+    if (!state.qr.detector) {
+      updateQrStatus("El navegador no expone lector QR en camara. Usa 'Leer imagen' o abre la app en Chrome/Edge movil.");
+      return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      updateQrStatus("La camara no esta disponible en este dispositivo.");
+      return;
+    }
+
+    stopQrScan();
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" }
+        },
+        audio: false
+      });
+
+      state.qr.stream = stream;
+      state.qr.scanning = true;
+      elements.qrVideo.srcObject = stream;
+      elements.qrVideo.classList.add("is-visible");
+      await elements.qrVideo.play();
+      updateQrStatus("Apunta al QR para guardarlo en la base de datos local.");
+      updateScannerControls();
+      scheduleScanFrame();
+    } catch (error) {
+      updateQrStatus("No se pudo abrir la camara. Revisa permisos del navegador.");
+      stopQrScan();
+    }
+  }
+
+  function scheduleScanFrame() {
+    cancelAnimationFrame(state.qr.frameRequest);
+    state.qr.frameRequest = requestAnimationFrame(scanVideoFrame);
+  }
+
+  async function scanVideoFrame() {
+    if (!state.qr.scanning || !state.qr.detector || elements.qrVideo.readyState < 2) {
+      if (state.qr.scanning) {
+        scheduleScanFrame();
+      }
+      return;
+    }
+
+    try {
+      const codes = await state.qr.detector.detect(elements.qrVideo);
+      if (codes.length) {
+        await persistQrValue(codes[0].rawValue);
+        stopQrScan("QR guardado correctamente.");
+        return;
+      }
+    } catch (error) {
+      updateQrStatus("Hubo un problema leyendo la imagen de la camara.");
+    }
+
+    if (state.qr.scanning) {
+      scheduleScanFrame();
+    }
+  }
+
+  async function handleQrImage(file) {
+    if (!file) {
+      return;
+    }
+
+    if (!state.qr.db) {
+      updateQrStatus("La base de datos local no esta disponible.");
+      return;
+    }
+
+    if (!state.qr.detector) {
+      updateQrStatus("Este navegador no soporta lectura QR nativa. Para camara e imagen hace falta Chrome o Edge recientes.");
+      return;
+    }
+
+    try {
+      updateQrStatus("Analizando imagen...");
+      const bitmap = await createImageBitmap(file);
+      const codes = await state.qr.detector.detect(bitmap);
+      bitmap.close();
+
+      if (!codes.length) {
+        updateQrStatus("No se detecto ningun QR en la imagen.");
+        return;
+      }
+
+      await persistQrValue(codes[0].rawValue);
+      updateQrStatus("QR guardado correctamente desde imagen.");
+    } catch (error) {
+      updateQrStatus("No se pudo procesar la imagen seleccionada.");
+    }
+  }
+
+  async function persistQrValue(rawValue) {
+    const value = String(rawValue || "").trim();
+    if (!value) {
+      updateQrStatus("El QR detectado no contiene texto utilizable.");
+      return;
+    }
+
+    const now = Date.now();
+    if (value === state.qr.lastValue && now - state.qr.lastSavedAt < 3000) {
+      updateQrStatus("Ese QR ya se acaba de registrar.");
+      return;
+    }
+
+    const record = {
+      value,
+      line: elements.qrLine.value,
+      shift: elements.qrShift.value,
+      createdAt: now
+    };
+
+    const saved = await saveQrRecord(state.qr.db, record);
+    state.qr.records.unshift(saved);
+    state.qr.records = state.qr.records.slice(0, QR_MAX_RECORDS);
+    state.qr.lastValue = value;
+    state.qr.lastSavedAt = now;
+    renderQrRecords();
+  }
+
+  function stopQrScan(message) {
+    state.qr.scanning = false;
+    cancelAnimationFrame(state.qr.frameRequest);
+    state.qr.frameRequest = null;
+
+    if (state.qr.stream) {
+      state.qr.stream.getTracks().forEach(function (track) {
+        track.stop();
+      });
+      state.qr.stream = null;
+    }
+
+    elements.qrVideo.pause();
+    elements.qrVideo.srcObject = null;
+    elements.qrVideo.classList.remove("is-visible");
+    updateScannerControls();
+
+    if (message) {
+      updateQrStatus(message);
+    }
+  }
+
+  function openQrDb() {
+    return new Promise(function (resolve, reject) {
+      if (!("indexedDB" in window)) {
+        reject(new Error("IndexedDB no disponible"));
+        return;
+      }
+
+      const request = window.indexedDB.open(QR_DB_NAME, 1);
+
+      request.onupgradeneeded = function () {
+        const db = request.result;
+        const store = db.createObjectStore(QR_STORE_NAME, { keyPath: "id", autoIncrement: true });
+        store.createIndex("createdAt", "createdAt");
+      };
+
+      request.onsuccess = function () {
+        resolve(request.result);
+      };
+
+      request.onerror = function () {
+        reject(request.error || new Error("No se pudo abrir la base de datos"));
+      };
+    });
+  }
+
+  function loadQrRecords(db) {
+    return new Promise(function (resolve, reject) {
+      const transaction = db.transaction(QR_STORE_NAME, "readonly");
+      const store = transaction.objectStore(QR_STORE_NAME);
+      const request = store.getAll();
+
+      request.onsuccess = function () {
+        const result = request.result.slice().sort(function (a, b) {
+          return b.createdAt - a.createdAt;
+        });
+        resolve(result);
+      };
+
+      request.onerror = function () {
+        reject(request.error || new Error("No se pudieron leer los registros"));
+      };
+    });
+  }
+
+  function saveQrRecord(db, record) {
+    return new Promise(function (resolve, reject) {
+      const transaction = db.transaction(QR_STORE_NAME, "readwrite");
+      const store = transaction.objectStore(QR_STORE_NAME);
+      const request = store.add(record);
+
+      request.onsuccess = function () {
+        resolve(Object.assign({ id: request.result }, record));
+      };
+
+      request.onerror = function () {
+        reject(request.error || new Error("No se pudo guardar el registro"));
+      };
+    });
   }
 
   function getSnapshot(line, referenceIndex, shift) {
@@ -284,6 +589,14 @@
     elements.installState.textContent = standalone ? "Instalada" : "PWA lista";
   }
 
+  function formatQrTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    return [
+      pad(date.getDate()) + "/" + pad(date.getMonth() + 1),
+      pad(date.getHours()) + ":" + pad(date.getMinutes())
+    ].join(" ");
+  }
+
   function formatLongDate(date) {
     const months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
     return pad(date.getDate()) + " " + months[date.getMonth()] + " " + date.getFullYear();
@@ -308,5 +621,14 @@
 
   function pad(value) {
     return String(value).padStart(2, "0");
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 }());

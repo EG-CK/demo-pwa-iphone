@@ -1,4 +1,4 @@
-const CACHE_NAME = "pulse-oee-demo-v2";
+const CACHE_NAME = "pulse-oee-demo-v3";
 const APP_FILES = [
   "./",
   "./index.html",

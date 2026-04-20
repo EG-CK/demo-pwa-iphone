@@ -38,6 +38,67 @@
         </div>
       </section>
 
+      <section class="panel panel--scanner">
+        <div class="section-head">
+          <div>
+            <p class="section-label">QR</p>
+            <h2>Escaneo y registro</h2>
+          </div>
+          <p class="mini-note" id="qrCount">0 lecturas</p>
+        </div>
+
+        <div class="field-grid scanner-meta">
+          <div class="field-group">
+            <label for="qrLine">Linea</label>
+            <select id="qrLine">
+              <option value="Rolling">Rolling</option>
+              <option value="Bombos">Bombos</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="qrShift">Turno</label>
+            <select id="qrShift">
+              <option value="A">Turno A</option>
+              <option value="B">Turno B</option>
+              <option value="C">Turno C</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="scanner-card">
+          <video id="qrVideo" class="scanner-video" playsinline muted></video>
+          <div class="scanner-overlay">
+            <div class="scanner-frame"></div>
+          </div>
+          <p class="scanner-status" id="qrStatus">Listo para iniciar el escaneo.</p>
+        </div>
+
+        <div class="scanner-actions">
+          <button type="button" class="action-button action-button--primary" id="startScanButton">Iniciar camara</button>
+          <button type="button" class="action-button" id="stopScanButton">Detener</button>
+          <label class="action-button action-button--ghost" for="qrImageInput">Leer imagen</label>
+          <input id="qrImageInput" type="file" accept="image/*" hidden>
+        </div>
+
+        <div class="table-card qr-table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Linea</th>
+                <th>Turno</th>
+                <th>QR</th>
+              </tr>
+            </thead>
+            <tbody id="qrRecordsBody">
+              <tr class="is-muted">
+                <td colspan="4">Todavia no hay lecturas guardadas.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <div id="lineBoards" class="line-boards"></div>
     </main>
   </div>
