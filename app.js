@@ -1,5 +1,6 @@
 (function () {
-  const APP_VERSION = "v1.5.2 | 20/04/2026";
+  const APP_VERSION = "v1.6.0 | 20/04/2026";
+  const BUILD_TOKEN = "20260420-v1.6.0";
   const MAX_TONS = 10;
   const LINES = ["Rolling", "Bombos"];
   const SHIFTS = ["A", "B", "C"];
@@ -595,44 +596,30 @@
     elements.refreshAppButton.textContent = "Actualizando...";
 
     try {
-      if (!("serviceWorker" in navigator)) {
-        window.location.reload();
-        return;
+      updateQrStatus("Forzando descarga de la ultima version...");
+
+      if ("caches" in window) {
+        const cacheKeys = await window.caches.keys();
+        await Promise.all(cacheKeys.map(function (cacheKey) {
+          return window.caches.delete(cacheKey);
+        }));
       }
 
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (!registration) {
-        window.location.reload();
-        return;
-      }
-
-      let reloaded = false;
-      navigator.serviceWorker.addEventListener("controllerchange", function () {
-        if (reloaded) {
-          return;
-        }
-
-        reloaded = true;
-        window.location.reload();
-      }, { once: true });
-
-      await registration.update();
-
-      if (registration.waiting) {
-        updateQrStatus("Aplicando la ultima version descargada...");
-        registration.waiting.postMessage({ type: "SKIP_WAITING" });
-        window.setTimeout(function () {
-          if (!reloaded) {
-            window.location.reload();
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(function (registration) {
+          if (registration.waiting) {
+            registration.waiting.postMessage({ type: "SKIP_WAITING" });
           }
-        }, 1200);
-        return;
+          return registration.unregister();
+        }));
       }
 
-      updateQrStatus("Comprobando si hay una version nueva...");
       window.setTimeout(function () {
-        window.location.reload();
-      }, 600);
+        const refreshUrl = new URL(window.location.href);
+        refreshUrl.searchParams.set("update", BUILD_TOKEN + "-" + Date.now());
+        window.location.replace(refreshUrl.toString());
+      }, 400);
     } catch (error) {
       updateQrStatus("No se pudo forzar la actualizacion. Prueba de nuevo con conexion.");
       elements.refreshAppButton.disabled = false;
