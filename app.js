@@ -1,5 +1,5 @@
 (function () {
-  const APP_VERSION = "v1.3.0 · 20/04/2026";
+  const APP_VERSION = "v1.4.0 · 20/04/2026";
   const MAX_TONS = 10;
   const LINES = ["Rolling", "Bombos"];
   const SHIFTS = ["A", "B", "C"];
@@ -28,6 +28,7 @@
     trendNote: document.getElementById("trendNote"),
     installState: document.getElementById("installState"),
     appVersion: document.getElementById("appVersion"),
+    refreshAppButton: document.getElementById("refreshAppButton"),
     qrLine: document.getElementById("qrLine"),
     qrShift: document.getElementById("qrShift"),
     qrVideo: document.getElementById("qrVideo"),
@@ -132,6 +133,10 @@
   }
 
   function bindEvents() {
+    elements.refreshAppButton.addEventListener("click", function () {
+      refreshApplication();
+    });
+
     elements.lineBoards.addEventListener("change", function (event) {
       const line = event.target.dataset.line;
       const control = event.target.dataset.control;
@@ -537,7 +542,20 @@
 
   function registerServiceWorker() {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw.js").catch(function () {
+      navigator.serviceWorker.register("sw.js").then(function (registration) {
+        registration.addEventListener("updatefound", function () {
+          const worker = registration.installing;
+          if (!worker) {
+            return;
+          }
+
+          worker.addEventListener("statechange", function () {
+            if (worker.state === "installed" && navigator.serviceWorker.controller) {
+              updateQrStatus("Nueva version descargada. Pulsa 'Actualizar app' para activarla.");
+            }
+          });
+        });
+      }).catch(function () {
         elements.installState.textContent = "Modo web";
       });
     }
@@ -550,6 +568,56 @@
 
   function renderAppVersion() {
     elements.appVersion.textContent = APP_VERSION;
+  }
+
+  async function refreshApplication() {
+    elements.refreshAppButton.disabled = true;
+    elements.refreshAppButton.textContent = "Actualizando...";
+
+    try {
+      if (!("serviceWorker" in navigator)) {
+        window.location.reload();
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        window.location.reload();
+        return;
+      }
+
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", function () {
+        if (reloaded) {
+          return;
+        }
+
+        reloaded = true;
+        window.location.reload();
+      }, { once: true });
+
+      await registration.update();
+
+      if (registration.waiting) {
+        updateQrStatus("Aplicando la ultima version descargada...");
+        registration.waiting.postMessage({ type: "SKIP_WAITING" });
+        window.setTimeout(function () {
+          if (!reloaded) {
+            window.location.reload();
+          }
+        }, 1200);
+        return;
+      }
+
+      updateQrStatus("Comprobando si hay una version nueva...");
+      window.setTimeout(function () {
+        window.location.reload();
+      }, 600);
+    } catch (error) {
+      updateQrStatus("No se pudo forzar la actualizacion. Prueba de nuevo con conexion.");
+      elements.refreshAppButton.disabled = false;
+      elements.refreshAppButton.textContent = "Actualizar app";
+    }
   }
 
   function formatQrTimestamp(timestamp) {

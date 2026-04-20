@@ -1,4 +1,4 @@
-const CACHE_NAME = "pulse-oee-demo-v5";
+const CACHE_NAME = "pulse-oee-demo-v6";
 const APP_FILES = [
   "./",
   "./index.html",
@@ -31,6 +31,12 @@ self.addEventListener("activate", function (event) {
     })
   );
   self.clients.claim();
+});
+
+self.addEventListener("message", function (event) {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("fetch", function (event) {
