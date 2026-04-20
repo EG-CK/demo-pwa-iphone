@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-app.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260420-v1.6.0">
+  <link rel="stylesheet" href="styles.css?v=20260420-v1.7.0">
   <title>Pulse OEE Demo</title>
 </head>
 <body>
@@ -93,6 +93,7 @@
 
         <div class="scanner-actions">
           <button type="button" class="action-button action-button--primary" id="startScanButton">Iniciar camara</button>
+          <button type="button" class="action-button action-button--accent" id="captureQrButton">Capturar QR</button>
           <button type="button" class="action-button" id="stopScanButton">Detener</button>
           <label class="action-button action-button--ghost" for="qrImageInput">Leer imagen</label>
           <input id="qrImageInput" type="file" accept="image/*" hidden>
@@ -122,6 +123,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.legacy.min.js"></script>
-  <script src="app.js?v=20260420-v1.6.0"></script>
+  <script src="app.js?v=20260420-v1.7.0"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 (function () {
-  const APP_VERSION = "v1.6.0 | 20/04/2026";
-  const BUILD_TOKEN = "20260420-v1.6.0";
+  const APP_VERSION = "v1.7.0 | 20/04/2026";
+  const BUILD_TOKEN = "20260420-v1.7.0";
   const MAX_TONS = 10;
   const LINES = ["Rolling", "Bombos"];
   const SHIFTS = ["A", "B", "C"];
@@ -16,8 +16,9 @@
     qr: {
       records: [],
       db: null,
-      scanning: false,
-      scanner: null,
+      cameraActive: false,
+      capturing: false,
+      stream: null,
       lastValue: "",
       lastSavedAt: 0
     }
@@ -39,6 +40,7 @@
     qrCount: document.getElementById("qrCount"),
     qrRecordsBody: document.getElementById("qrRecordsBody"),
     startScanButton: document.getElementById("startScanButton"),
+    captureQrButton: document.getElementById("captureQrButton"),
     stopScanButton: document.getElementById("stopScanButton"),
     qrImageInput: document.getElementById("qrImageInput")
   };
@@ -63,7 +65,7 @@
       state.qr.db = await openQrDb();
       state.qr.records = await loadQrRecords(state.qr.db);
       renderQrRecords();
-      updateQrStatus(window.QrScanner ? "Listo para iniciar el escaneo." : "No se pudo cargar el lector QR. Recarga la app con internet e intentalo de nuevo.");
+      updateQrStatus(window.QrScanner ? "Listo para iniciar la camara." : "No se pudo cargar el lector QR. Recarga la app con internet e intentalo de nuevo.");
     } catch (error) {
       updateQrStatus("No se pudo abrir la base de datos local.");
       renderQrRecords();
@@ -161,11 +163,15 @@
     });
 
     elements.startScanButton.addEventListener("click", function () {
-      startQrScan();
+      startCamera();
+    });
+
+    elements.captureQrButton.addEventListener("click", function () {
+      captureQr();
     });
 
     elements.stopScanButton.addEventListener("click", function () {
-      stopQrScan("Escaneo detenido.");
+      stopCamera("Camara detenida.");
     });
 
     elements.qrImageInput.addEventListener("change", function (event) {
@@ -279,20 +285,21 @@
 
   function updateScannerControls() {
     const disabled = !state.qr.db;
-    elements.startScanButton.disabled = disabled || state.qr.scanning;
-    elements.stopScanButton.disabled = !state.qr.scanning;
+    elements.startScanButton.disabled = disabled || state.qr.cameraActive;
+    elements.captureQrButton.disabled = disabled || !state.qr.cameraActive || state.qr.capturing;
+    elements.stopScanButton.disabled = !state.qr.cameraActive;
   }
 
   function updateScannerVisualState() {
     const signalText = elements.qrSignal.querySelector(".scanner-signal__text");
-    elements.scannerCard.classList.toggle("is-live", state.qr.scanning);
-    elements.qrVideo.classList.toggle("is-visible", state.qr.scanning);
-    elements.qrVideo.classList.toggle("is-scanning", state.qr.scanning);
-    elements.qrSignal.classList.toggle("is-scanning", state.qr.scanning);
-    signalText.textContent = state.qr.scanning ? "Leyendo QR en tiempo real" : "Listo para leer";
+    elements.scannerCard.classList.toggle("is-live", state.qr.cameraActive);
+    elements.qrVideo.classList.toggle("is-visible", state.qr.cameraActive);
+    elements.qrVideo.classList.toggle("is-scanning", state.qr.capturing);
+    elements.qrSignal.classList.toggle("is-scanning", state.qr.capturing);
+    signalText.textContent = state.qr.capturing ? "Capturando QR..." : state.qr.cameraActive ? "Camara lista para capturar" : "Listo para leer";
   }
 
-  async function startQrScan() {
+  async function startCamera() {
     if (!state.qr.db) {
       updateQrStatus("La base de datos local todavia no esta disponible.");
       return;
@@ -308,8 +315,9 @@
       return;
     }
 
-    stopQrScan();
-    state.qr.scanning = true;
+    stopCamera();
+    state.qr.cameraActive = true;
+    state.qr.capturing = false;
     updateScannerVisualState();
     updateScannerControls();
 
@@ -318,34 +326,54 @@
       elements.qrVideo.setAttribute("muted", "");
       elements.qrVideo.setAttribute("playsinline", "");
       elements.qrVideo.setAttribute("webkit-playsinline", "true");
-
-      state.qr.scanner = new window.QrScanner(
-        elements.qrVideo,
-        function (result) {
-          const value = result && result.data ? result.data : result;
-          persistQrValue(value).then(function () {
-            stopQrScan("QR guardado correctamente.");
-          }).catch(function () {
-            updateQrStatus("Se detecto el QR, pero no se pudo guardar.");
-          });
+      state.qr.stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" }
         },
-        {
-          preferredCamera: "environment",
-          returnDetailedScanResult: true,
-          onDecodeError: function () {
-            return;
-          }
-        }
-      );
-
-      await state.qr.scanner.start();
-      updateQrStatus("Apunta al QR para guardarlo en la base de datos local.");
+        audio: false
+      });
+      elements.qrVideo.srcObject = state.qr.stream;
+      await elements.qrVideo.play();
+      updateQrStatus("Camara iniciada. Apunta al QR correcto y pulsa 'Capturar QR'.");
       updateScannerVisualState();
       updateScannerControls();
     } catch (error) {
-      state.qr.scanning = false;
+      state.qr.cameraActive = false;
+      state.qr.capturing = false;
       updateQrStatus("No se pudo abrir la camara. Revisa permisos del navegador.");
-      stopQrScan();
+      stopCamera();
+    }
+  }
+
+  async function captureQr() {
+    if (!state.qr.cameraActive) {
+      updateQrStatus("Primero inicia la camara.");
+      return;
+    }
+
+    if (!window.QrScanner) {
+      updateQrStatus("No se pudo cargar el lector QR. Abre la app con conexion e intentalo otra vez.");
+      return;
+    }
+
+    state.qr.capturing = true;
+    updateQrStatus("Capturando QR...");
+    updateScannerVisualState();
+    updateScannerControls();
+
+    try {
+      const result = await window.QrScanner.scanImage(elements.qrVideo, {
+        returnDetailedScanResult: true
+      });
+      const value = result && result.data ? result.data : result;
+      await persistQrValue(value);
+      updateQrStatus("QR guardado correctamente.");
+    } catch (error) {
+      updateQrStatus("No se detecto un QR valido. Ajusta el encuadre y vuelve a capturar.");
+    } finally {
+      state.qr.capturing = false;
+      updateScannerVisualState();
+      updateScannerControls();
     }
   }
 
@@ -403,17 +431,19 @@
     renderQrRecords();
   }
 
-  function stopQrScan(message) {
-    state.qr.scanning = false;
+  function stopCamera(message) {
+    state.qr.cameraActive = false;
+    state.qr.capturing = false;
 
-    if (state.qr.scanner) {
-      try {
-        state.qr.scanner.stop();
-        state.qr.scanner.destroy();
-      } finally {
-        state.qr.scanner = null;
-      }
+    if (state.qr.stream) {
+      state.qr.stream.getTracks().forEach(function (track) {
+        track.stop();
+      });
+      state.qr.stream = null;
     }
+
+    elements.qrVideo.pause();
+    elements.qrVideo.srcObject = null;
 
     updateScannerVisualState();
     updateScannerControls();

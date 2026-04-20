@@ -470,7 +470,7 @@ input {
 
 .scanner-actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin-top: 14px;
 }
@@ -499,6 +499,12 @@ input {
 .action-button--ghost {
   background: rgba(15, 95, 75, 0.06);
   color: var(--brand);
+}
+
+.action-button--accent {
+  background: linear-gradient(135deg, #ef8e45, #d76f24);
+  border-color: transparent;
+  color: #fffaf5;
 }
 
 .action-button:disabled {
