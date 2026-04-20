@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-app.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260420-v1.8.1">
+  <link rel="stylesheet" href="styles.css?v=20260420-v1.8.2">
   <title>Pulse OEE Demo</title>
 </head>
 <body>
@@ -34,7 +34,7 @@
           <button type="button" class="menu-card menu-card--accent" id="openQrView">
             <p class="menu-card__eyebrow">Captura</p>
             <h3>Lector QR</h3>
-            <p class="menu-card__text">Abre la camara, encuadra el codigo y guarda lecturas cuando tu quieras.</p>
+            <p class="menu-card__text">Abre la camara, encuadra el codigo y guarda lecturas QR sin datos de OEE ni turnos.</p>
           </button>
         </div>
       </section>
@@ -77,27 +77,9 @@
           <div class="section-head">
             <div>
               <p class="section-label">QR</p>
-              <h2>Escaneo y registro</h2>
+              <h2>Escaneo independiente</h2>
             </div>
             <p class="mini-note" id="qrCount">0 lecturas</p>
-          </div>
-
-          <div class="field-grid scanner-meta">
-            <div class="field-group">
-              <label for="qrLine">Linea</label>
-              <select id="qrLine">
-                <option value="Rolling">Rolling</option>
-                <option value="Bombos">Bombos</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <label for="qrShift">Turno</label>
-              <select id="qrShift">
-                <option value="A">Turno A</option>
-                <option value="B">Turno B</option>
-                <option value="C">Turno C</option>
-              </select>
-            </div>
           </div>
 
           <div class="scanner-card">
@@ -135,14 +117,12 @@
               <thead>
                 <tr>
                   <th>Fecha</th>
-                  <th>Linea</th>
-                  <th>Turno</th>
                   <th>QR</th>
                 </tr>
               </thead>
               <tbody id="qrRecordsBody">
                 <tr class="is-muted">
-                  <td colspan="4">Todavia no hay lecturas guardadas.</td>
+                  <td colspan="2">Todavia no hay lecturas guardadas.</td>
                 </tr>
               </tbody>
             </table>
@@ -158,6 +138,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.legacy.min.js"></script>
-  <script src="app.js?v=20260420-v1.8.1"></script>
+  <script src="app.js?v=20260420-v1.8.2"></script>
 </body>
 </html>

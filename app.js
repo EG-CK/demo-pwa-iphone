@@ -1,6 +1,6 @@
 (function () {
-  const APP_VERSION = "v1.8.1 | 20/04/2026";
-  const BUILD_TOKEN = "20260420-v1.8.1";
+  const APP_VERSION = "v1.8.2 | 20/04/2026";
+  const BUILD_TOKEN = "20260420-v1.8.2";
   const QR_CAPTURE_WINDOW_MS = 5000;
   const QR_CAPTURE_RETRY_MS = 180;
   const MAX_TONS = 10;
@@ -41,8 +41,6 @@
     installState: document.getElementById("installState"),
     appVersion: document.getElementById("appVersion"),
     refreshAppButton: document.getElementById("refreshAppButton"),
-    qrLine: document.getElementById("qrLine"),
-    qrShift: document.getElementById("qrShift"),
     scannerCard: document.querySelector(".scanner-card"),
     qrVideo: document.getElementById("qrVideo"),
     qrStatus: document.getElementById("qrStatus"),
@@ -307,7 +305,7 @@
     elements.qrCount.textContent = records.length + " lecturas";
 
     if (!records.length) {
-      elements.qrRecordsBody.innerHTML = '<tr class="is-muted"><td colspan="4">Todavia no hay lecturas guardadas.</td></tr>';
+      elements.qrRecordsBody.innerHTML = '<tr class="is-muted"><td colspan="2">Todavia no hay lecturas guardadas.</td></tr>';
       return;
     }
 
@@ -315,8 +313,6 @@
       return [
         "<tr>",
         "<td>", formatQrTimestamp(record.createdAt), "</td>",
-        "<td>", escapeHtml(record.line), "</td>",
-        "<td>", escapeHtml(record.shift), "</td>",
         "<td>", escapeHtml(record.value), "</td>",
         "</tr>"
       ].join("");
@@ -474,8 +470,6 @@
 
     const record = {
       value,
-      line: elements.qrLine.value,
-      shift: elements.qrShift.value,
       createdAt: now
     };
 
