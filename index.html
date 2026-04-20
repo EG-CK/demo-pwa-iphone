@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-app.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260420-v1.7.1">
+  <link rel="stylesheet" href="styles.css?v=20260420-v1.8.0">
   <title>Pulse OEE Demo</title>
 </head>
 <body>
@@ -29,100 +29,143 @@
     </header>
 
     <main class="content">
-      <section class="panel panel--overview">
+      <section class="panel panel--menu" id="homeView">
         <div class="section-head">
           <div>
-            <p class="section-label">Resumen</p>
-            <h2>Vista rapida del ultimo dia</h2>
+            <p class="section-label">Menu</p>
+            <h2>Selecciona una funcionalidad</h2>
           </div>
-          <p class="mini-note" id="trendNote"></p>
+          <p class="mini-note">Pulsa para entrar</p>
         </div>
-        <div class="chart-card">
-          <div class="chart chart--compact" id="trendChart" aria-label="Comparativa del ultimo dia"></div>
+
+        <div class="menu-grid">
+          <button type="button" class="menu-card" id="openOeeView">
+            <p class="menu-card__eyebrow">Produccion</p>
+            <h3>OEE y turnos</h3>
+            <p class="menu-card__text">Consulta el resumen del dia, cambia fecha y compara turnos por linea.</p>
+          </button>
+          <button type="button" class="menu-card menu-card--accent" id="openQrView">
+            <p class="menu-card__eyebrow">Captura</p>
+            <h3>Lector QR</h3>
+            <p class="menu-card__text">Abre la camara, encuadra el codigo y guarda lecturas cuando tu quieras.</p>
+          </button>
         </div>
       </section>
 
-      <section class="panel panel--scanner">
-        <div class="section-head">
+      <section id="oeeView" hidden>
+        <div class="module-head">
+          <button type="button" class="module-back" data-open-view="home">Volver al menu</button>
           <div>
-            <p class="section-label">QR</p>
-            <h2>Escaneo y registro</h2>
-          </div>
-          <p class="mini-note" id="qrCount">0 lecturas</p>
-        </div>
-
-        <div class="field-grid scanner-meta">
-          <div class="field-group">
-            <label for="qrLine">Linea</label>
-            <select id="qrLine">
-              <option value="Rolling">Rolling</option>
-              <option value="Bombos">Bombos</option>
-            </select>
-          </div>
-          <div class="field-group">
-            <label for="qrShift">Turno</label>
-            <select id="qrShift">
-              <option value="A">Turno A</option>
-              <option value="B">Turno B</option>
-              <option value="C">Turno C</option>
-            </select>
+            <p class="section-label">Produccion</p>
+            <h2>OEE y turnos</h2>
           </div>
         </div>
 
-        <div class="scanner-card">
-          <video id="qrVideo" class="scanner-video" playsinline muted></video>
-          <div class="scanner-overlay">
-            <div class="scanner-hud">
-              <div class="scanner-signal" id="qrSignal">
-                <span class="scanner-signal__dot"></span>
-                <span class="scanner-signal__text">Listo para leer</span>
-              </div>
-              <div class="scanner-frame">
-                <div class="scanner-corners">
-                  <span class="scanner-corner scanner-corner--tl"></span>
-                  <span class="scanner-corner scanner-corner--tr"></span>
-                  <span class="scanner-corner scanner-corner--bl"></span>
-                  <span class="scanner-corner scanner-corner--br"></span>
-                </div>
-                <div class="scanner-line"></div>
-              </div>
+        <section class="panel panel--overview">
+          <div class="section-head">
+            <div>
+              <p class="section-label">Resumen</p>
+              <h2>Vista rapida del ultimo dia</h2>
+            </div>
+            <p class="mini-note" id="trendNote"></p>
+          </div>
+          <div class="chart-card">
+            <div class="chart chart--compact" id="trendChart" aria-label="Comparativa del ultimo dia"></div>
+          </div>
+        </section>
+
+        <div id="lineBoards" class="line-boards"></div>
+      </section>
+
+      <section id="qrView" hidden>
+        <div class="module-head">
+          <button type="button" class="module-back" data-open-view="home">Volver al menu</button>
+          <div>
+            <p class="section-label">Captura</p>
+            <h2>Lector QR</h2>
+          </div>
+        </div>
+
+        <section class="panel panel--scanner">
+          <div class="section-head">
+            <div>
+              <p class="section-label">QR</p>
+              <h2>Escaneo y registro</h2>
+            </div>
+            <p class="mini-note" id="qrCount">0 lecturas</p>
+          </div>
+
+          <div class="field-grid scanner-meta">
+            <div class="field-group">
+              <label for="qrLine">Linea</label>
+              <select id="qrLine">
+                <option value="Rolling">Rolling</option>
+                <option value="Bombos">Bombos</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="qrShift">Turno</label>
+              <select id="qrShift">
+                <option value="A">Turno A</option>
+                <option value="B">Turno B</option>
+                <option value="C">Turno C</option>
+              </select>
             </div>
           </div>
-          <p class="scanner-status" id="qrStatus">Listo para iniciar el escaneo.</p>
-        </div>
 
-        <div class="scanner-actions">
-          <button type="button" class="action-button action-button--primary" id="startScanButton">Iniciar camara</button>
-          <button type="button" class="action-button action-button--accent" id="captureQrButton">Capturar QR</button>
-          <button type="button" class="action-button" id="stopScanButton">Detener</button>
-          <label class="action-button action-button--ghost" for="qrImageInput">Leer imagen</label>
-          <input id="qrImageInput" type="file" accept="image/*" hidden>
-        </div>
+          <div class="scanner-card">
+            <video id="qrVideo" class="scanner-video" playsinline muted></video>
+            <div class="scanner-overlay">
+              <div class="scanner-hud">
+                <div class="scanner-signal" id="qrSignal">
+                  <span class="scanner-signal__dot"></span>
+                  <span class="scanner-signal__text">Listo para leer</span>
+                </div>
+                <div class="scanner-frame">
+                  <div class="scanner-corners">
+                    <span class="scanner-corner scanner-corner--tl"></span>
+                    <span class="scanner-corner scanner-corner--tr"></span>
+                    <span class="scanner-corner scanner-corner--bl"></span>
+                    <span class="scanner-corner scanner-corner--br"></span>
+                  </div>
+                  <div class="scanner-line"></div>
+                </div>
+              </div>
+            </div>
+            <p class="scanner-status" id="qrStatus">Listo para iniciar el escaneo.</p>
+          </div>
 
-        <div class="table-card qr-table-card">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Linea</th>
-                <th>Turno</th>
-                <th>QR</th>
-              </tr>
-            </thead>
-            <tbody id="qrRecordsBody">
-              <tr class="is-muted">
-                <td colspan="4">Todavia no hay lecturas guardadas.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          <div class="scanner-actions">
+            <button type="button" class="action-button action-button--primary" id="startScanButton">Iniciar camara</button>
+            <button type="button" class="action-button action-button--accent" id="captureQrButton">Capturar QR</button>
+            <button type="button" class="action-button" id="stopScanButton">Detener</button>
+            <label class="action-button action-button--ghost" for="qrImageInput">Leer imagen</label>
+            <input id="qrImageInput" type="file" accept="image/*" hidden>
+          </div>
+
+          <div class="table-card qr-table-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Linea</th>
+                  <th>Turno</th>
+                  <th>QR</th>
+                </tr>
+              </thead>
+              <tbody id="qrRecordsBody">
+                <tr class="is-muted">
+                  <td colspan="4">Todavia no hay lecturas guardadas.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </section>
-
-      <div id="lineBoards" class="line-boards"></div>
     </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.legacy.min.js"></script>
-  <script src="app.js?v=20260420-v1.7.1"></script>
+  <script src="app.js?v=20260420-v1.8.0"></script>
 </body>
 </html>

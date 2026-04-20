@@ -1,6 +1,6 @@
 (function () {
-  const APP_VERSION = "v1.7.1 | 20/04/2026";
-  const BUILD_TOKEN = "20260420-v1.7.1";
+  const APP_VERSION = "v1.8.0 | 20/04/2026";
+  const BUILD_TOKEN = "20260420-v1.8.0";
   const QR_CAPTURE_WINDOW_MS = 5000;
   const QR_CAPTURE_RETRY_MS = 180;
   const MAX_TONS = 10;
@@ -13,6 +13,7 @@
   const QR_MAX_RECORDS = 30;
 
   const state = {
+    currentView: "home",
     Rolling: { referenceIndex: 0, shift: "A" },
     Bombos: { referenceIndex: 0, shift: "A" },
     qr: {
@@ -31,6 +32,12 @@
     lineBoards: document.getElementById("lineBoards"),
     trendChart: document.getElementById("trendChart"),
     trendNote: document.getElementById("trendNote"),
+    homeView: document.getElementById("homeView"),
+    oeeView: document.getElementById("oeeView"),
+    qrView: document.getElementById("qrView"),
+    openOeeView: document.getElementById("openOeeView"),
+    openQrView: document.getElementById("openQrView"),
+    viewButtons: document.querySelectorAll("[data-open-view]"),
     installState: document.getElementById("installState"),
     appVersion: document.getElementById("appVersion"),
     refreshAppButton: document.getElementById("refreshAppButton"),
@@ -60,6 +67,7 @@
     bindEvents();
     registerServiceWorker();
     updateInstallState();
+    updateView();
     updateQrStatus("Inicializando base de datos local...");
     updateScannerVisualState();
     updateScannerControls();
@@ -146,6 +154,20 @@
       refreshApplication();
     });
 
+    elements.openOeeView.addEventListener("click", function () {
+      openView("oee");
+    });
+
+    elements.openQrView.addEventListener("click", function () {
+      openView("qr");
+    });
+
+    elements.viewButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        openView(button.dataset.openView);
+      });
+    });
+
     elements.lineBoards.addEventListener("change", function (event) {
       const line = event.target.dataset.line;
       const control = event.target.dataset.control;
@@ -181,6 +203,21 @@
       handleQrImage(event.target.files && event.target.files[0]);
       event.target.value = "";
     });
+  }
+
+  function openView(viewName) {
+    if (state.currentView === "qr" && viewName !== "qr") {
+      stopCamera();
+    }
+
+    state.currentView = viewName;
+    updateView();
+  }
+
+  function updateView() {
+    elements.homeView.hidden = state.currentView !== "home";
+    elements.oeeView.hidden = state.currentView !== "oee";
+    elements.qrView.hidden = state.currentView !== "qr";
   }
 
   function renderBoards() {
