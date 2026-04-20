@@ -15,9 +15,7 @@
       records: [],
       db: null,
       scanning: false,
-      detector: null,
-      stream: null,
-      frameRequest: null,
+      scanner: null,
       lastValue: "",
       lastSavedAt: 0
     }
@@ -56,9 +54,8 @@
     try {
       state.qr.db = await openQrDb();
       state.qr.records = await loadQrRecords(state.qr.db);
-      state.qr.detector = createQrDetector();
       renderQrRecords();
-      updateQrStatus(state.qr.detector ? "Listo para iniciar el escaneo." : "Este navegador no permite leer QR en directo. Puedes probar con una imagen.");
+      updateQrStatus(window.QrScanner ? "Listo para iniciar el escaneo." : "No se pudo cargar el lector QR. Recarga la app con internet e intentalo de nuevo.");
     } catch (error) {
       updateQrStatus("No se pudo abrir la base de datos local.");
       renderQrRecords();
@@ -274,30 +271,14 @@
     elements.stopScanButton.disabled = !state.qr.scanning;
   }
 
-  function updateQrStatus(message) {
-    elements.qrStatus.textContent = message;
-  }
-
-  function createQrDetector() {
-    if (!("BarcodeDetector" in window)) {
-      return null;
-    }
-
-    try {
-      return new window.BarcodeDetector({ formats: ["qr_code"] });
-    } catch (error) {
-      return null;
-    }
-  }
-
   async function startQrScan() {
     if (!state.qr.db) {
       updateQrStatus("La base de datos local todavia no esta disponible.");
       return;
     }
 
-    if (!state.qr.detector) {
-      updateQrStatus("El navegador no expone lector QR en camara. Usa 'Leer imagen' o abre la app en Chrome/Edge movil.");
+    if (!window.QrScanner) {
+      updateQrStatus("No se pudo cargar el lector QR. Abre la app con conexion e intentalo otra vez.");
       return;
     }
 
@@ -309,53 +290,33 @@
     stopQrScan();
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: "environment" }
+      state.qr.scanner = new window.QrScanner(
+        elements.qrVideo,
+        function (result) {
+          const value = result && result.data ? result.data : result;
+          persistQrValue(value).then(function () {
+            stopQrScan("QR guardado correctamente.");
+          }).catch(function () {
+            updateQrStatus("Se detecto el QR, pero no se pudo guardar.");
+          });
         },
-        audio: false
-      });
+        {
+          preferredCamera: "environment",
+          returnDetailedScanResult: true,
+          onDecodeError: function () {
+            return;
+          }
+        }
+      );
 
-      state.qr.stream = stream;
+      await state.qr.scanner.start();
       state.qr.scanning = true;
-      elements.qrVideo.srcObject = stream;
       elements.qrVideo.classList.add("is-visible");
-      await elements.qrVideo.play();
       updateQrStatus("Apunta al QR para guardarlo en la base de datos local.");
       updateScannerControls();
-      scheduleScanFrame();
     } catch (error) {
       updateQrStatus("No se pudo abrir la camara. Revisa permisos del navegador.");
       stopQrScan();
-    }
-  }
-
-  function scheduleScanFrame() {
-    cancelAnimationFrame(state.qr.frameRequest);
-    state.qr.frameRequest = requestAnimationFrame(scanVideoFrame);
-  }
-
-  async function scanVideoFrame() {
-    if (!state.qr.scanning || !state.qr.detector || elements.qrVideo.readyState < 2) {
-      if (state.qr.scanning) {
-        scheduleScanFrame();
-      }
-      return;
-    }
-
-    try {
-      const codes = await state.qr.detector.detect(elements.qrVideo);
-      if (codes.length) {
-        await persistQrValue(codes[0].rawValue);
-        stopQrScan("QR guardado correctamente.");
-        return;
-      }
-    } catch (error) {
-      updateQrStatus("Hubo un problema leyendo la imagen de la camara.");
-    }
-
-    if (state.qr.scanning) {
-      scheduleScanFrame();
     }
   }
 
@@ -369,26 +330,19 @@
       return;
     }
 
-    if (!state.qr.detector) {
-      updateQrStatus("Este navegador no soporta lectura QR nativa. Para camara e imagen hace falta Chrome o Edge recientes.");
+    if (!window.QrScanner) {
+      updateQrStatus("No se pudo cargar el lector QR. Abre la app con conexion e intentalo otra vez.");
       return;
     }
 
     try {
       updateQrStatus("Analizando imagen...");
-      const bitmap = await createImageBitmap(file);
-      const codes = await state.qr.detector.detect(bitmap);
-      bitmap.close();
-
-      if (!codes.length) {
-        updateQrStatus("No se detecto ningun QR en la imagen.");
-        return;
-      }
-
-      await persistQrValue(codes[0].rawValue);
+      const result = await window.QrScanner.scanImage(file, { returnDetailedScanResult: true });
+      const value = result && result.data ? result.data : result;
+      await persistQrValue(value);
       updateQrStatus("QR guardado correctamente desde imagen.");
     } catch (error) {
-      updateQrStatus("No se pudo procesar la imagen seleccionada.");
+      updateQrStatus("No se detecto ningun QR en la imagen seleccionada.");
     }
   }
 
@@ -422,24 +376,26 @@
 
   function stopQrScan(message) {
     state.qr.scanning = false;
-    cancelAnimationFrame(state.qr.frameRequest);
-    state.qr.frameRequest = null;
 
-    if (state.qr.stream) {
-      state.qr.stream.getTracks().forEach(function (track) {
-        track.stop();
-      });
-      state.qr.stream = null;
+    if (state.qr.scanner) {
+      try {
+        state.qr.scanner.stop();
+        state.qr.scanner.destroy();
+      } finally {
+        state.qr.scanner = null;
+      }
     }
 
-    elements.qrVideo.pause();
-    elements.qrVideo.srcObject = null;
     elements.qrVideo.classList.remove("is-visible");
     updateScannerControls();
 
     if (message) {
       updateQrStatus(message);
     }
+  }
+
+  function updateQrStatus(message) {
+    elements.qrStatus.textContent = message;
   }
 
   function openQrDb() {
