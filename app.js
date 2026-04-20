@@ -1,6 +1,8 @@
 (function () {
-  const APP_VERSION = "v1.7.0 | 20/04/2026";
-  const BUILD_TOKEN = "20260420-v1.7.0";
+  const APP_VERSION = "v1.7.1 | 20/04/2026";
+  const BUILD_TOKEN = "20260420-v1.7.1";
+  const QR_CAPTURE_WINDOW_MS = 5000;
+  const QR_CAPTURE_RETRY_MS = 180;
   const MAX_TONS = 10;
   const LINES = ["Rolling", "Bombos"];
   const SHIFTS = ["A", "B", "C"];
@@ -19,6 +21,7 @@
       cameraActive: false,
       capturing: false,
       stream: null,
+      captureSessionId: 0,
       lastValue: "",
       lastSavedAt: 0
     }
@@ -357,23 +360,39 @@
     }
 
     state.qr.capturing = true;
-    updateQrStatus("Capturando QR...");
+    state.qr.captureSessionId += 1;
+    const sessionId = state.qr.captureSessionId;
+    const startedAt = Date.now();
+    updateQrStatus("Buscando QR... manten el codigo dentro del marco.");
     updateScannerVisualState();
     updateScannerControls();
 
     try {
-      const result = await window.QrScanner.scanImage(elements.qrVideo, {
-        returnDetailedScanResult: true
-      });
-      const value = result && result.data ? result.data : result;
-      await persistQrValue(value);
-      updateQrStatus("QR guardado correctamente.");
+      while (state.qr.cameraActive && state.qr.captureSessionId === sessionId && Date.now() - startedAt < QR_CAPTURE_WINDOW_MS) {
+        try {
+          const result = await window.QrScanner.scanImage(elements.qrVideo, {
+            returnDetailedScanResult: true
+          });
+          const value = result && result.data ? result.data : result;
+          await persistQrValue(value);
+          updateQrStatus("QR guardado correctamente.");
+          return;
+        } catch (error) {
+          await wait(QR_CAPTURE_RETRY_MS);
+        }
+      }
+
+      if (state.qr.captureSessionId === sessionId && state.qr.cameraActive) {
+        updateQrStatus("No se detecto un QR valido. Ajusta el encuadre y vuelve a capturar.");
+      }
     } catch (error) {
-      updateQrStatus("No se detecto un QR valido. Ajusta el encuadre y vuelve a capturar.");
+      updateQrStatus("No se pudo completar la captura. Intentalo de nuevo.");
     } finally {
-      state.qr.capturing = false;
-      updateScannerVisualState();
-      updateScannerControls();
+      if (state.qr.captureSessionId === sessionId) {
+        state.qr.capturing = false;
+        updateScannerVisualState();
+        updateScannerControls();
+      }
     }
   }
 
@@ -434,6 +453,7 @@
   function stopCamera(message) {
     state.qr.cameraActive = false;
     state.qr.capturing = false;
+    state.qr.captureSessionId += 1;
 
     if (state.qr.stream) {
       state.qr.stream.getTracks().forEach(function (track) {
@@ -698,5 +718,11 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+
+  function wait(milliseconds) {
+    return new Promise(function (resolve) {
+      window.setTimeout(resolve, milliseconds);
+    });
   }
 }());
