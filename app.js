@@ -1,6 +1,6 @@
 (function () {
-  const APP_VERSION = "v1.8.0 | 20/04/2026";
-  const BUILD_TOKEN = "20260420-v1.8.0";
+  const APP_VERSION = "v1.8.1 | 20/04/2026";
+  const BUILD_TOKEN = "20260420-v1.8.1";
   const QR_CAPTURE_WINDOW_MS = 5000;
   const QR_CAPTURE_RETRY_MS = 180;
   const MAX_TONS = 10;

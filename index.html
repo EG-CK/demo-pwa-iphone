@@ -8,25 +8,12 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-app.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260420-v1.8.0">
+  <link rel="stylesheet" href="styles.css?v=20260420-v1.8.1">
   <title>Pulse OEE Demo</title>
 </head>
 <body>
   <div class="app-shell">
-    <header class="hero">
-      <div class="hero__copy">
-        <p class="eyebrow">Demo local instalable</p>
-        <h1>Pulse OEE</h1>
-        <p class="hero__text">
-          Panel simple de productividad con datos inventados para Rolling y Bombos.
-        </p>
-      </div>
-      <div class="hero__meta">
-        <div class="hero__badge" id="installState">PWA lista</div>
-        <p class="hero__version" id="appVersion">Version</p>
-        <button type="button" class="hero__action" id="refreshAppButton">Actualizar app</button>
-      </div>
-    </header>
+    <div id="installState" hidden>PWA lista</div>
 
     <main class="content">
       <section class="panel panel--menu" id="homeView">
@@ -163,9 +150,14 @@
         </section>
       </section>
     </main>
+
+    <footer class="app-footer">
+      <p class="app-footer__version" id="appVersion">Version</p>
+      <button type="button" class="app-footer__action" id="refreshAppButton">Actualizar app</button>
+    </footer>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.legacy.min.js"></script>
-  <script src="app.js?v=20260420-v1.8.0"></script>
+  <script src="app.js?v=20260420-v1.8.1"></script>
 </body>
 </html>
