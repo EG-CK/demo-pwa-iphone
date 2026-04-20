@@ -1,5 +1,5 @@
 (function () {
-  const APP_VERSION = "v1.4.0 · 20/04/2026";
+  const APP_VERSION = "v1.5.0 | 20/04/2026";
   const MAX_TONS = 10;
   const LINES = ["Rolling", "Bombos"];
   const SHIFTS = ["A", "B", "C"];
@@ -33,6 +33,7 @@
     qrShift: document.getElementById("qrShift"),
     qrVideo: document.getElementById("qrVideo"),
     qrStatus: document.getElementById("qrStatus"),
+    qrSignal: document.getElementById("qrSignal"),
     qrCount: document.getElementById("qrCount"),
     qrRecordsBody: document.getElementById("qrRecordsBody"),
     startScanButton: document.getElementById("startScanButton"),
@@ -53,6 +54,7 @@
     registerServiceWorker();
     updateInstallState();
     updateQrStatus("Inicializando base de datos local...");
+    updateScannerVisualState();
     updateScannerControls();
 
     try {
@@ -279,6 +281,14 @@
     elements.stopScanButton.disabled = !state.qr.scanning;
   }
 
+  function updateScannerVisualState() {
+    const signalText = elements.qrSignal.querySelector(".scanner-signal__text");
+    elements.qrVideo.classList.toggle("is-visible", state.qr.scanning);
+    elements.qrVideo.classList.toggle("is-scanning", state.qr.scanning);
+    elements.qrSignal.classList.toggle("is-scanning", state.qr.scanning);
+    signalText.textContent = state.qr.scanning ? "Leyendo QR en tiempo real" : "Listo para leer";
+  }
+
   async function startQrScan() {
     if (!state.qr.db) {
       updateQrStatus("La base de datos local todavia no esta disponible.");
@@ -319,8 +329,8 @@
 
       await state.qr.scanner.start();
       state.qr.scanning = true;
-      elements.qrVideo.classList.add("is-visible");
       updateQrStatus("Apunta al QR para guardarlo en la base de datos local.");
+      updateScannerVisualState();
       updateScannerControls();
     } catch (error) {
       updateQrStatus("No se pudo abrir la camara. Revisa permisos del navegador.");
@@ -394,7 +404,7 @@
       }
     }
 
-    elements.qrVideo.classList.remove("is-visible");
+    updateScannerVisualState();
     updateScannerControls();
 
     if (message) {

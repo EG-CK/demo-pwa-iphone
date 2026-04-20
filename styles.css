@@ -281,7 +281,7 @@ input {
 .scanner-card {
   position: relative;
   margin-top: 16px;
-  min-height: 250px;
+  min-height: 320px;
   overflow: hidden;
   border-radius: var(--radius-lg);
   background:
@@ -293,11 +293,16 @@ input {
 .scanner-video {
   display: none;
   width: 100%;
-  height: 250px;
+  height: 320px;
   object-fit: cover;
+  filter: saturate(1.05) contrast(1.04);
 }
 
 .scanner-video.is-visible {
+  display: block;
+}
+
+.scanner-video.is-scanning {
   display: block;
 }
 
@@ -308,16 +313,120 @@ input {
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(7, 21, 18, 0.12), rgba(7, 21, 18, 0.04) 24%, rgba(7, 21, 18, 0.18));
+}
+
+.scanner-hud {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px;
+}
+
+.scanner-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(8, 24, 20, 0.46);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(245, 255, 249, 0.92);
+  backdrop-filter: blur(10px);
+}
+
+.scanner-signal__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #8ae9be;
+  box-shadow: 0 0 0 0 rgba(138, 233, 190, 0.5);
+}
+
+.scanner-signal.is-scanning .scanner-signal__dot {
+  background: #42f5b3;
+  animation: pulse-dot 1.4s infinite;
+}
+
+.scanner-signal__text {
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .scanner-frame {
-  width: min(60vw, 190px);
-  height: min(60vw, 190px);
-  border: 3px solid rgba(255, 255, 255, 0.88);
-  border-radius: 26px;
+  position: relative;
+  align-self: center;
+  width: min(72vw, 250px);
+  height: min(72vw, 250px);
+  margin-bottom: 22px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.02);
   box-shadow:
-    0 0 0 999px rgba(6, 20, 17, 0.26),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+    0 0 0 999px rgba(6, 20, 17, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.scanner-corners {
+  position: absolute;
+  inset: 0;
+}
+
+.scanner-corner {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  border-color: rgba(255, 255, 255, 0.96);
+  border-style: solid;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.18));
+}
+
+.scanner-corner--tl {
+  top: 0;
+  left: 0;
+  border-width: 4px 0 0 4px;
+  border-top-left-radius: 28px;
+}
+
+.scanner-corner--tr {
+  top: 0;
+  right: 0;
+  border-width: 4px 4px 0 0;
+  border-top-right-radius: 28px;
+}
+
+.scanner-corner--bl {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 4px 4px;
+  border-bottom-left-radius: 28px;
+}
+
+.scanner-corner--br {
+  right: 0;
+  bottom: 0;
+  border-width: 0 4px 4px 0;
+  border-bottom-right-radius: 28px;
+}
+
+.scanner-line {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 24px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(66, 245, 179, 0.1), rgba(66, 245, 179, 1), rgba(66, 245, 179, 0.1));
+  box-shadow: 0 0 22px rgba(66, 245, 179, 0.8);
+  opacity: 0;
+}
+
+.scanner-video.is-scanning + .scanner-overlay .scanner-line {
+  opacity: 1;
+  animation: scanner-sweep 2.2s linear infinite;
 }
 
 .scanner-status {
@@ -328,10 +437,11 @@ input {
   margin: 0;
   padding: 10px 12px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.88);
+  color: #12372f;
   font-size: 0.88rem;
   line-height: 1.35;
+  backdrop-filter: blur(8px);
 }
 
 .scanner-actions {
@@ -563,6 +673,34 @@ input {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(15, 95, 75, 0.08);
   line-height: 1.4;
+}
+
+@keyframes scanner-sweep {
+  0% {
+    top: 24px;
+  }
+
+  50% {
+    top: calc(100% - 28px);
+  }
+
+  100% {
+    top: 24px;
+  }
+}
+
+@keyframes pulse-dot {
+  0% {
+    box-shadow: 0 0 0 0 rgba(138, 233, 190, 0.5);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(138, 233, 190, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(138, 233, 190, 0);
+  }
 }
 
 @media (max-width: 380px) {

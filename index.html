@@ -72,7 +72,21 @@
         <div class="scanner-card">
           <video id="qrVideo" class="scanner-video" playsinline muted></video>
           <div class="scanner-overlay">
-            <div class="scanner-frame"></div>
+            <div class="scanner-hud">
+              <div class="scanner-signal" id="qrSignal">
+                <span class="scanner-signal__dot"></span>
+                <span class="scanner-signal__text">Listo para leer</span>
+              </div>
+              <div class="scanner-frame">
+                <div class="scanner-corners">
+                  <span class="scanner-corner scanner-corner--tl"></span>
+                  <span class="scanner-corner scanner-corner--tr"></span>
+                  <span class="scanner-corner scanner-corner--bl"></span>
+                  <span class="scanner-corner scanner-corner--br"></span>
+                </div>
+                <div class="scanner-line"></div>
+              </div>
+            </div>
           </div>
           <p class="scanner-status" id="qrStatus">Listo para iniciar el escaneo.</p>
         </div>
