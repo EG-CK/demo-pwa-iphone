@@ -1,5 +1,5 @@
 (function () {
-  const APP_VERSION = "v1.5.1 | 20/04/2026";
+  const APP_VERSION = "v1.5.2 | 20/04/2026";
   const MAX_TONS = 10;
   const LINES = ["Rolling", "Bombos"];
   const SHIFTS = ["A", "B", "C"];
@@ -308,8 +308,16 @@
     }
 
     stopQrScan();
+    state.qr.scanning = true;
+    updateScannerVisualState();
+    updateScannerControls();
 
     try {
+      elements.qrVideo.setAttribute("autoplay", "");
+      elements.qrVideo.setAttribute("muted", "");
+      elements.qrVideo.setAttribute("playsinline", "");
+      elements.qrVideo.setAttribute("webkit-playsinline", "true");
+
       state.qr.scanner = new window.QrScanner(
         elements.qrVideo,
         function (result) {
@@ -330,11 +338,11 @@
       );
 
       await state.qr.scanner.start();
-      state.qr.scanning = true;
       updateQrStatus("Apunta al QR para guardarlo en la base de datos local.");
       updateScannerVisualState();
       updateScannerControls();
     } catch (error) {
+      state.qr.scanning = false;
       updateQrStatus("No se pudo abrir la camara. Revisa permisos del navegador.");
       stopQrScan();
     }
