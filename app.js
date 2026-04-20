@@ -1,5 +1,5 @@
 (function () {
-  const APP_VERSION = "v1.5.0 | 20/04/2026";
+  const APP_VERSION = "v1.5.1 | 20/04/2026";
   const MAX_TONS = 10;
   const LINES = ["Rolling", "Bombos"];
   const SHIFTS = ["A", "B", "C"];
@@ -31,6 +31,7 @@
     refreshAppButton: document.getElementById("refreshAppButton"),
     qrLine: document.getElementById("qrLine"),
     qrShift: document.getElementById("qrShift"),
+    scannerCard: document.querySelector(".scanner-card"),
     qrVideo: document.getElementById("qrVideo"),
     qrStatus: document.getElementById("qrStatus"),
     qrSignal: document.getElementById("qrSignal"),
@@ -283,6 +284,7 @@
 
   function updateScannerVisualState() {
     const signalText = elements.qrSignal.querySelector(".scanner-signal__text");
+    elements.scannerCard.classList.toggle("is-live", state.qr.scanning);
     elements.qrVideo.classList.toggle("is-visible", state.qr.scanning);
     elements.qrVideo.classList.toggle("is-scanning", state.qr.scanning);
     elements.qrSignal.classList.toggle("is-scanning", state.qr.scanning);
