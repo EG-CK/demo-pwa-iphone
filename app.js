@@ -1,4 +1,5 @@
 (function () {
+  const APP_VERSION = "v1.3.0 · 20/04/2026";
   const MAX_TONS = 10;
   const LINES = ["Rolling", "Bombos"];
   const SHIFTS = ["A", "B", "C"];
@@ -26,6 +27,7 @@
     trendChart: document.getElementById("trendChart"),
     trendNote: document.getElementById("trendNote"),
     installState: document.getElementById("installState"),
+    appVersion: document.getElementById("appVersion"),
     qrLine: document.getElementById("qrLine"),
     qrShift: document.getElementById("qrShift"),
     qrVideo: document.getElementById("qrVideo"),
@@ -43,6 +45,7 @@
   init();
 
   async function init() {
+    renderAppVersion();
     renderBoards();
     renderTrendOverview();
     bindEvents();
@@ -543,6 +546,10 @@
   function updateInstallState() {
     const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
     elements.installState.textContent = standalone ? "Instalada" : "PWA lista";
+  }
+
+  function renderAppVersion() {
+    elements.appVersion.textContent = APP_VERSION;
   }
 
   function formatQrTimestamp(timestamp) {
