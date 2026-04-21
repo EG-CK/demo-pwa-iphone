@@ -33,6 +33,7 @@
     trainButton: document.getElementById("trainButton"),
     deleteDataButton: document.getElementById("deleteDataButton"),
     deleteModelButton: document.getElementById("deleteModelButton"),
+    predictCameraInput: document.getElementById("predictCameraInput"),
     predictButton: document.getElementById("predictButton"),
     predictImageInput: document.getElementById("predictImageInput"),
     predictFileButton: document.getElementById("predictFileButton")
@@ -58,6 +59,12 @@
     elements.trainButton.addEventListener("click", trainModel);
     elements.predictButton.addEventListener("click", predictSnapshot);
     elements.predictFileButton.addEventListener("click", predictFromFile);
+    elements.predictCameraInput.addEventListener("change", function () {
+      predictFromInput(elements.predictCameraInput);
+    });
+    elements.predictImageInput.addEventListener("change", function () {
+      predictFromInput(elements.predictImageInput);
+    });
     elements.deleteDataButton.addEventListener("click", clearDataset);
     elements.deleteModelButton.addEventListener("click", clearModel);
   }
@@ -246,12 +253,16 @@
   }
 
   async function predictFromFile() {
+    await predictFromInput(elements.predictImageInput);
+  }
+
+  async function predictFromInput(inputElement) {
     if (!state.model) {
       elements.predictStatus.textContent = "Entrena o carga un modelo antes de predecir.";
       return;
     }
 
-    var file = elements.predictImageInput.files && elements.predictImageInput.files[0];
+    var file = inputElement.files && inputElement.files[0];
     if (!file) {
       elements.predictStatus.textContent = "Selecciona una imagen primero.";
       return;
@@ -260,7 +271,7 @@
     try {
       var dataUrl = await fileToDataUrl(file);
       await runPrediction(dataUrl);
-      elements.predictImageInput.value = "";
+      inputElement.value = "";
     } catch (error) {
       elements.predictStatus.textContent = "No se pudo predecir la imagen seleccionada.";
     }
