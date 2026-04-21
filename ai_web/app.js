@@ -46,6 +46,7 @@
     trainButton: document.getElementById("trainButton"),
     deleteDataButton: document.getElementById("deleteDataButton"),
     deleteModelButton: document.getElementById("deleteModelButton"),
+    deleteAllButton: document.getElementById("deleteAllButton"),
     takeEvaluationPhotoButton: document.getElementById("takeEvaluationPhotoButton"),
     retakeEvaluationButton: document.getElementById("retakeEvaluationButton"),
     predictButton: document.getElementById("predictButton")
@@ -82,6 +83,7 @@
     elements.trainButton.addEventListener("click", trainModel);
     elements.deleteDataButton.addEventListener("click", clearDataset);
     elements.deleteModelButton.addEventListener("click", clearModel);
+    elements.deleteAllButton.addEventListener("click", clearAllTrainingData);
     elements.takeEvaluationPhotoButton.addEventListener("click", takeEvaluationPhoto);
     elements.retakeEvaluationButton.addEventListener("click", retakeEvaluationPhoto);
     elements.predictButton.addEventListener("click", predictSnapshot);
@@ -477,16 +479,41 @@
     elements.trainStatus.textContent = "Modelo eliminado del navegador.";
     elements.trainingDetail.textContent = "Entrena de nuevo para evaluar.";
     elements.trainingProgress.style.width = "0%";
+    elements.predictLabel.textContent = "-";
+    elements.predictConfidence.textContent = "-";
+    elements.predictStatus.textContent = "Modelo borrado. Entrena de nuevo antes de evaluar.";
     updateButtons();
   }
 
   function clearDataset() {
     state.samples = [];
+    state.trainingImageData = "";
+    state.evaluationImageData = "";
     persistSamples();
     renderCounts();
     renderTrainingReadiness();
+    elements.trainingCanvas.hidden = true;
+    elements.evaluationCanvas.hidden = true;
+    if (state.activeScreen === "training") {
+      elements.trainingVideo.hidden = false;
+    }
+    if (state.activeScreen === "evaluation") {
+      elements.evaluationVideo.hidden = false;
+    }
     elements.trainingProgress.style.width = "0%";
-    elements.trainingDetail.textContent = "Muestras borradas.";
+    elements.trainingDetail.textContent = "Imagenes de entrenamiento borradas.";
+    elements.captureStatus.textContent = "Imagenes borradas. Captura nuevas muestras OK y KO.";
+    elements.predictLabel.textContent = "-";
+    elements.predictConfidence.textContent = "-";
+    elements.predictStatus.textContent = "Imagenes borradas. Captura una nueva foto para evaluar.";
+    updateButtons();
+  }
+
+  async function clearAllTrainingData() {
+    clearDataset();
+    await clearModel();
+    elements.trainStatus.textContent = "Modelo e imagenes borrados.";
+    elements.trainingDetail.textContent = "Empieza de nuevo capturando muestras OK y KO.";
     updateButtons();
   }
 
@@ -632,6 +659,7 @@
     elements.trainButton.disabled = !canTrain || busy;
     elements.deleteModelButton.disabled = busy;
     elements.deleteDataButton.disabled = busy;
+    elements.deleteAllButton.disabled = busy;
     elements.takeEvaluationPhotoButton.disabled = state.activeScreen !== "evaluation" || !hasStream || busy;
     elements.retakeEvaluationButton.disabled = !hasEvaluationImage || busy;
     elements.predictButton.disabled = !hasEvaluationImage || busy;

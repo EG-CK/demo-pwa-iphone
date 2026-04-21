@@ -1,13 +1,13 @@
-const CACHE_NAME = "qr-okko-v26";
+const CACHE_NAME = "qr-okko-v27";
 const APP_FILES = [
   "./",
   "./index.html",
-  "./styles.css?v=20260421-v1.17.0",
-  "./app.js?v=20260421-v1.17.0",
-  "./ai_web/index.html?v=20260421-v1.17.0",
-  "./ai_web/styles.css?v=20260421-v1.17.0",
-  "./ai_web/app.js?v=20260421-v1.17.0",
-  "./manifest.webmanifest?v=20260421-v1.17.0",
+  "./styles.css?v=20260421-v1.18.0",
+  "./app.js?v=20260421-v1.18.0",
+  "./ai_web/index.html?v=20260421-v1.18.0",
+  "./ai_web/styles.css?v=20260421-v1.18.0",
+  "./ai_web/app.js?v=20260421-v1.18.0",
+  "./manifest.webmanifest?v=20260421-v1.18.0",
   "./icons/icon-app.svg",
   "./icons/apple-touch-icon.svg"
 ];

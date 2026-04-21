@@ -125,6 +125,7 @@ canvas { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
 .btn--primary { background: var(--brand); color: #f6fffd; border-color: transparent; }
 .btn--ok { background: rgba(31, 147, 97, 0.15); color: var(--ok); }
 .btn--ko { background: rgba(194, 90, 74, 0.15); color: var(--ko); }
+.btn--danger { background: rgba(194, 90, 74, 0.1); color: var(--ko); }
 .field { display: grid; gap: 6px; }
 .field span { color: var(--muted); }
 .field input {
