@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consola de Entrenamiento IA</title>
+  <link rel="stylesheet" href="/console/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Backend local Python</p>
+        <h1>Consola de entrenamiento</h1>
+        <p class="hero__text">Gestiona dataset OK/KO, lanza entrenamientos y revisa el estado del modelo desde el navegador.</p>
+      </div>
+      <a class="hero__link" href="/capture">Abrir capturador</a>
+    </header>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="section-label">Dataset</p>
+          <h2>Resumen actual</h2>
+        </div>
+        <button type="button" class="ghost-button" id="refreshButton">Actualizar</button>
+      </div>
+
+      <div class="stat-grid">
+        <article class="stat-card">
+          <p class="stat-card__label">Total imagenes</p>
+          <p class="stat-card__value" id="totalImages">0</p>
+        </article>
+        <article class="stat-card stat-card--ok">
+          <p class="stat-card__label">OK</p>
+          <p class="stat-card__value" id="okCount">0</p>
+        </article>
+        <article class="stat-card stat-card--ko">
+          <p class="stat-card__label">KO</p>
+          <p class="stat-card__value" id="koCount">0</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="section-label">Entrenamiento</p>
+          <h2>Control del modelo</h2>
+        </div>
+        <p class="status-chip" id="trainingState">idle</p>
+      </div>
+
+      <div class="control-grid">
+        <label class="field">
+          <span>Epocas</span>
+          <input id="epochsInput" type="number" min="1" max="50" value="6">
+        </label>
+        <label class="field">
+          <span>Batch size</span>
+          <input id="batchSizeInput" type="number" min="2" max="64" value="8">
+        </label>
+        <label class="field">
+          <span>Learning rate</span>
+          <input id="learningRateInput" type="number" step="0.0001" min="0.0001" value="0.001">
+        </label>
+      </div>
+
+      <div class="action-row">
+        <button type="button" class="primary-button" id="startTrainingButton">Entrenar modelo</button>
+        <p class="training-message" id="trainingMessage">Listo para entrenar.</p>
+      </div>
+
+      <div class="table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Epoca</th>
+              <th>Loss train</th>
+              <th>Acc train</th>
+              <th>Loss val</th>
+              <th>Acc val</th>
+            </tr>
+          </thead>
+          <tbody id="metricsBody">
+            <tr class="is-muted">
+              <td colspan="5">Todavia no hay metricas.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="section-label">Verificacion</p>
+          <h2>Reconocer imagen OK / KO</h2>
+        </div>
+      </div>
+
+      <div class="control-grid control-grid--predict">
+        <label class="field">
+          <span>Imagen de mano</span>
+          <input id="predictImageInput" type="file" accept="image/*" capture="environment">
+        </label>
+      </div>
+
+      <div class="action-row">
+        <button type="button" class="primary-button" id="predictButton">Predecir</button>
+        <p class="training-message" id="predictMessage">Selecciona una imagen para verificar.</p>
+      </div>
+
+      <div class="stat-grid stat-grid--predict">
+        <article class="stat-card">
+          <p class="stat-card__label">Resultado</p>
+          <p class="stat-card__value" id="predictLabel">-</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-card__label">Confianza</p>
+          <p class="stat-card__value" id="predictConfidence">-</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-card__label">Modelo</p>
+          <p class="stat-card__value" id="predictModel">-</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="section-label">Capturas</p>
+          <h2>Ultimos registros</h2>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Etiqueta</th>
+              <th>Archivo</th>
+            </tr>
+          </thead>
+          <tbody id="recordsBody">
+            <tr class="is-muted">
+              <td colspan="3">Todavia no hay imagenes registradas.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="/console/app.js"></script>
+</body>
+</html>

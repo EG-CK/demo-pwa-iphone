@@ -1,0 +1,3 @@
+ai_trainer/data/
+ai_trainer/__pycache__/
+*.pyc

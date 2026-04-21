@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Capturador OK/KO</title>
+  <link rel="stylesheet" href="/capture/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Captura movil</p>
+        <h1>Etiquetado OK / KO</h1>
+        <p class="hero__text">Haz una foto, revisa la imagen y guardala directamente en el dataset local.</p>
+      </div>
+      <a class="hero__link" href="/console">Abrir consola</a>
+    </header>
+
+    <section class="panel">
+      <div class="camera-card">
+        <video id="cameraVideo" playsinline muted></video>
+        <canvas id="previewCanvas" hidden></canvas>
+        <p class="camera-status" id="captureStatus">Listo para iniciar la camara.</p>
+      </div>
+
+      <div class="action-grid">
+        <button type="button" class="primary-button" id="startCameraButton">Iniciar camara</button>
+        <button type="button" class="ghost-button" id="takePhotoButton">Capturar foto</button>
+        <button type="button" class="ghost-button" id="retakeButton">Repetir</button>
+        <button type="button" class="label-button label-button--ok" id="saveOkButton">Guardar OK</button>
+        <button type="button" class="label-button label-button--ko" id="saveKoButton">Guardar KO</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="/capture/app.js"></script>
+</body>
+</html>

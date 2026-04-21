@@ -1,6 +1,6 @@
 (function () {
-  const APP_VERSION = "v1.8.2 | 20/04/2026";
-  const BUILD_TOKEN = "20260420-v1.8.2";
+  const APP_VERSION = "v1.9.1 | 21/04/2026";
+  const BUILD_TOKEN = "20260421-v1.9.1";
   const QR_CAPTURE_WINDOW_MS = 5000;
   const QR_CAPTURE_RETRY_MS = 180;
   const MAX_TONS = 10;
@@ -25,6 +25,9 @@
       captureSessionId: 0,
       lastValue: "",
       lastSavedAt: 0
+    },
+    ai: {
+      pollTimer: null
     }
   };
 
@@ -35,8 +38,10 @@
     homeView: document.getElementById("homeView"),
     oeeView: document.getElementById("oeeView"),
     qrView: document.getElementById("qrView"),
+    aiView: document.getElementById("aiView"),
     openOeeView: document.getElementById("openOeeView"),
     openQrView: document.getElementById("openQrView"),
+    openAiView: document.getElementById("openAiView"),
     viewButtons: document.querySelectorAll("[data-open-view]"),
     installState: document.getElementById("installState"),
     appVersion: document.getElementById("appVersion"),
@@ -50,7 +55,19 @@
     startScanButton: document.getElementById("startScanButton"),
     captureQrButton: document.getElementById("captureQrButton"),
     stopScanButton: document.getElementById("stopScanButton"),
-    qrImageInput: document.getElementById("qrImageInput")
+    qrImageInput: document.getElementById("qrImageInput"),
+    aiBaseUrl: document.getElementById("aiBaseUrl"),
+    openAiCapture: document.getElementById("openAiCapture"),
+    openAiConsole: document.getElementById("openAiConsole"),
+    checkAiHealth: document.getElementById("checkAiHealth"),
+    aiStatus: document.getElementById("aiStatus"),
+    aiConnectionBadge: document.getElementById("aiConnectionBadge"),
+    aiConnectionDetail: document.getElementById("aiConnectionDetail"),
+    aiStartCommand: document.getElementById("aiStartCommand"),
+    copyAiStartCommand: document.getElementById("copyAiStartCommand"),
+    aiDatasetTotal: document.getElementById("aiDatasetTotal"),
+    aiDatasetOk: document.getElementById("aiDatasetOk"),
+    aiDatasetKo: document.getElementById("aiDatasetKo")
   };
 
   const dailyHistory = buildHistory();
@@ -160,6 +177,10 @@
       openView("qr");
     });
 
+    elements.openAiView.addEventListener("click", function () {
+      openView("ai");
+    });
+
     elements.viewButtons.forEach(function (button) {
       button.addEventListener("click", function () {
         openView(button.dataset.openView);
@@ -201,6 +222,22 @@
       handleQrImage(event.target.files && event.target.files[0]);
       event.target.value = "";
     });
+
+    elements.openAiCapture.addEventListener("click", function () {
+      openAiPath("/capture");
+    });
+
+    elements.openAiConsole.addEventListener("click", function () {
+      openAiPath("/console");
+    });
+
+    elements.copyAiStartCommand.addEventListener("click", function () {
+      copyAiStartCommand();
+    });
+
+    elements.checkAiHealth.addEventListener("click", function () {
+      checkAiHealth(true);
+    });
   }
 
   function openView(viewName) {
@@ -208,14 +245,134 @@
       stopCamera();
     }
 
+    if (state.currentView === "ai" && viewName !== "ai") {
+      stopAiMonitoring();
+    }
+
     state.currentView = viewName;
     updateView();
+
+    if (viewName === "ai") {
+      startAiMonitoring();
+    }
   }
 
   function updateView() {
     elements.homeView.hidden = state.currentView !== "home";
     elements.oeeView.hidden = state.currentView !== "oee";
     elements.qrView.hidden = state.currentView !== "qr";
+    elements.aiView.hidden = state.currentView !== "ai";
+  }
+
+  function normalizeAiBaseUrl() {
+    var raw = String(elements.aiBaseUrl.value || "").trim();
+    if (!raw) {
+      raw = "http://127.0.0.1:8765";
+      elements.aiBaseUrl.value = raw;
+    }
+    return raw.replace(/\/+$/, "");
+  }
+
+  function openAiPath(path) {
+    var baseUrl = normalizeAiBaseUrl();
+    var url = baseUrl + path;
+    window.open(url, "_blank", "noopener");
+  }
+
+  async function checkAiHealth(manual) {
+    await refreshAiConnection(Boolean(manual));
+  }
+
+  function startAiMonitoring() {
+    stopAiMonitoring();
+    refreshAiConnection(false);
+    state.ai.pollTimer = window.setInterval(function () {
+      refreshAiConnection(false);
+    }, 3500);
+  }
+
+  function stopAiMonitoring() {
+    if (state.ai.pollTimer) {
+      window.clearInterval(state.ai.pollTimer);
+      state.ai.pollTimer = null;
+    }
+  }
+
+  async function refreshAiConnection(manual) {
+    var baseUrl = normalizeAiBaseUrl();
+    if (manual) {
+      elements.checkAiHealth.disabled = true;
+      elements.aiStatus.textContent = "Comprobando...";
+    }
+
+    try {
+      var healthResponse = await fetch(baseUrl + "/api/health", { cache: "no-store" });
+      if (!healthResponse.ok) {
+        throw new Error("Servidor no disponible");
+      }
+      var statusResponse = await fetch(baseUrl + "/api/status", { cache: "no-store" });
+      if (!statusResponse.ok) {
+        throw new Error("No se pudo leer el estado del servidor.");
+      }
+      var statusPayload = await statusResponse.json();
+      setAiConnected(statusPayload);
+    } catch (error) {
+      setAiDisconnected();
+    } finally {
+      if (manual) {
+        elements.checkAiHealth.disabled = false;
+      }
+    }
+  }
+
+  async function copyAiStartCommand() {
+    var command = String(elements.aiStartCommand.value || "").trim();
+    if (!command) {
+      return;
+    }
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(command);
+        elements.aiStatus.textContent = "Comando copiado. Pegalo en PowerShell para arrancar el server.";
+      } else {
+        throw new Error("Clipboard API no disponible");
+      }
+    } catch (error) {
+      elements.aiStartCommand.removeAttribute("readonly");
+      elements.aiStartCommand.focus();
+      elements.aiStartCommand.select();
+      elements.aiStatus.textContent = "No se pudo copiar automaticamente. Selecciona y copia el comando manualmente.";
+    } finally {
+      elements.aiStartCommand.setAttribute("readonly", "readonly");
+    }
+  }
+
+  function setAiConnected(payload) {
+    var counts = payload.dataset_counts || { ok: "-", ko: "-" };
+    elements.aiStatus.textContent = "Servidor activo y enlazado";
+    elements.aiConnectionBadge.textContent = "Conectado";
+    elements.aiConnectionBadge.classList.remove("ai-health__badge--off");
+    elements.aiConnectionBadge.classList.add("ai-health__badge--on");
+    elements.aiConnectionDetail.textContent = "La app recibe estado del backend correctamente.";
+    elements.openAiCapture.disabled = false;
+    elements.openAiConsole.disabled = false;
+    elements.aiDatasetTotal.textContent = String(payload.total_images);
+    elements.aiDatasetOk.textContent = String(counts.ok);
+    elements.aiDatasetKo.textContent = String(counts.ko);
+  }
+
+  function setAiDisconnected() {
+    elements.aiStatus.textContent = "Sin conexion";
+    elements.aiConnectionBadge.textContent = "Desconectado";
+    elements.aiConnectionBadge.classList.remove("ai-health__badge--on");
+    elements.aiConnectionBadge.classList.add("ai-health__badge--off");
+    elements.aiConnectionDetail.textContent = "Ejecuta el comando de arranque y vuelve a comprobar.";
+    elements.openAiCapture.disabled = true;
+    elements.openAiConsole.disabled = true;
+    elements.aiDatasetTotal.textContent = "-";
+    elements.aiDatasetOk.textContent = "-";
+    elements.aiDatasetKo.textContent = "-";
   }
 
   function renderBoards() {

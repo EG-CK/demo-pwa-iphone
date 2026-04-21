@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-app.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260420-v1.8.2">
+  <link rel="stylesheet" href="styles.css?v=20260421-v1.9.1">
   <title>Pulse OEE Demo</title>
 </head>
 <body>
@@ -35,6 +35,11 @@
             <p class="menu-card__eyebrow">Captura</p>
             <h3>Lector QR</h3>
             <p class="menu-card__text">Abre la camara, encuadra el codigo y guarda lecturas QR sin datos de OEE ni turnos.</p>
+          </button>
+          <button type="button" class="menu-card" id="openAiView">
+            <p class="menu-card__eyebrow">IA Local</p>
+            <h3>Mano OK / KO</h3>
+            <p class="menu-card__text">Accede al capturador, al entrenamiento y a la verificacion del modelo para signos de mano.</p>
           </button>
         </div>
       </section>
@@ -129,6 +134,91 @@
           </div>
         </section>
       </section>
+
+      <section id="aiView" hidden>
+        <div class="module-head">
+          <button type="button" class="module-back" data-open-view="home">Volver al menu</button>
+          <div>
+            <p class="section-label">IA Local</p>
+            <h2>Mano OK / KO</h2>
+          </div>
+        </div>
+
+        <section class="panel panel--overview">
+          <div class="section-head">
+            <div>
+              <p class="section-label">Servidor</p>
+              <h2>Control backend Python</h2>
+            </div>
+            <p class="mini-note" id="aiStatus">Pendiente de comprobacion</p>
+          </div>
+
+          <div class="ai-health">
+            <p class="ai-health__badge ai-health__badge--off" id="aiConnectionBadge">Desconectado</p>
+            <p class="ai-health__text" id="aiConnectionDetail">Todavia no hay conexion con el server.</p>
+          </div>
+
+          <div class="field-group">
+            <label for="aiBaseUrl">URL base del backend</label>
+            <input id="aiBaseUrl" type="text" value="http://127.0.0.1:8765" placeholder="http://127.0.0.1:8765">
+          </div>
+
+          <div class="scanner-actions">
+            <button type="button" class="action-button action-button--primary" id="copyAiStartCommand">Lanzar server</button>
+            <button type="button" class="action-button action-button--accent" id="checkAiHealth">Comprobar servidor</button>
+            <button type="button" class="action-button action-button--ghost" id="openAiCapture" disabled>Abrir capturador</button>
+            <button type="button" class="action-button action-button--ghost" id="openAiConsole" disabled>Abrir consola IA</button>
+          </div>
+
+          <div class="field-group">
+            <label for="aiStartCommand">Comando de arranque</label>
+            <input id="aiStartCommand" type="text" value=".\start_ai_trainer.bat" readonly>
+          </div>
+
+          <div class="kpi-grid">
+            <article class="kpi-card">
+              <p class="kpi-card__label">Total imagenes</p>
+              <p class="kpi-card__value" id="aiDatasetTotal">-</p>
+              <p class="kpi-card__hint">Detectado desde /api/status</p>
+            </article>
+            <article class="kpi-card">
+              <p class="kpi-card__label">OK</p>
+              <p class="kpi-card__value" id="aiDatasetOk">-</p>
+              <p class="kpi-card__hint">Muestras etiqueta OK</p>
+            </article>
+            <article class="kpi-card">
+              <p class="kpi-card__label">KO</p>
+              <p class="kpi-card__value" id="aiDatasetKo">-</p>
+              <p class="kpi-card__hint">Muestras etiqueta KO</p>
+            </article>
+          </div>
+
+          <div class="table-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Paso</th>
+                  <th>Que hacer</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td>Pulsa <strong>Lanzar server</strong> para copiar el comando y pegalo en PowerShell.</td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td>Usa <strong>Comprobar servidor</strong> hasta ver estado <strong>Conectado</strong>.</td>
+                </tr>
+                <tr>
+                  <td>3</td>
+                  <td>Abre capturador y consola IA para entrenar y verificar el modelo.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
     </main>
 
     <footer class="app-footer">
@@ -138,6 +228,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.legacy.min.js"></script>
-  <script src="app.js?v=20260420-v1.8.2"></script>
+  <script src="app.js?v=20260421-v1.9.1"></script>
 </body>
 </html>
