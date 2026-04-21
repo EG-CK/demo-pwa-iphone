@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>IA Mano OK/KO - JS</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Modo navegador</p>
+        <h1>IA Mano OK/KO (JavaScript)</h1>
+        <p class="hero__text">Captura muestras, entrena y predice en el propio navegador sin servidor Python.</p>
+      </div>
+      <a class="hero__link" href="../index.html">Volver al menu</a>
+    </header>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="section-label">Captura</p>
+          <h2>Muestras de entrenamiento</h2>
+        </div>
+        <p class="status-chip" id="modelState">Modelo sin cargar</p>
+      </div>
+
+      <div class="camera-wrap">
+        <video id="cameraVideo" playsinline muted></video>
+        <canvas id="snapshotCanvas" hidden></canvas>
+        <p class="helper" id="captureStatus">Inicia la camara para empezar.</p>
+      </div>
+
+      <div class="action-grid">
+        <button type="button" class="btn btn--primary" id="startCameraButton">Iniciar camara</button>
+        <button type="button" class="btn" id="takePhotoButton">Capturar</button>
+        <button type="button" class="btn" id="retakeButton">Repetir</button>
+        <button type="button" class="btn btn--ok" id="saveOkButton">Guardar OK</button>
+        <button type="button" class="btn btn--ko" id="saveKoButton">Guardar KO</button>
+      </div>
+
+      <div class="kpis">
+        <article class="kpi">
+          <p class="kpi__label">Total</p>
+          <p class="kpi__value" id="totalCount">0</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi__label">OK</p>
+          <p class="kpi__value" id="okCount">0</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi__label">KO</p>
+          <p class="kpi__value" id="koCount">0</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="section-label">Entrenamiento</p>
+          <h2>Modelo local</h2>
+        </div>
+      </div>
+
+      <div class="field-grid">
+        <label class="field"><span>Epocas</span><input id="epochsInput" type="number" min="1" max="40" value="8"></label>
+        <label class="field"><span>Batch size</span><input id="batchInput" type="number" min="2" max="32" value="8"></label>
+      </div>
+
+      <div class="action-row">
+        <button type="button" class="btn btn--primary" id="trainButton">Entrenar modelo</button>
+        <button type="button" class="btn" id="deleteDataButton">Borrar dataset</button>
+        <button type="button" class="btn" id="deleteModelButton">Borrar modelo</button>
+      </div>
+
+      <p class="helper" id="trainStatus">Necesitas al menos 5 OK y 5 KO para entrenar.</p>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="section-label">Verificacion</p>
+          <h2>Prediccion</h2>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button type="button" class="btn btn--primary" id="predictButton">Predecir foto actual</button>
+      </div>
+      <p class="helper" id="predictStatus">Captura una foto y ejecuta prediccion.</p>
+      <div class="kpis">
+        <article class="kpi">
+          <p class="kpi__label">Resultado</p>
+          <p class="kpi__value" id="predictLabel">-</p>
+        </article>
+        <article class="kpi">
+          <p class="kpi__label">Confianza</p>
+          <p class="kpi__value" id="predictConfidence">-</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

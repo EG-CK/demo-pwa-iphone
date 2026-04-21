@@ -1,6 +1,6 @@
 (function () {
-  const APP_VERSION = "v1.9.2 | 21/04/2026";
-  const BUILD_TOKEN = "20260421-v1.9.2";
+  const APP_VERSION = "v1.10.0 | 21/04/2026";
+  const BUILD_TOKEN = "20260421-v1.10.0";
   const QR_CAPTURE_WINDOW_MS = 5000;
   const QR_CAPTURE_RETRY_MS = 180;
   const MAX_TONS = 10;
@@ -39,6 +39,7 @@
     openOeeView: document.getElementById("openOeeView"),
     openQrView: document.getElementById("openQrView"),
     openAiView: document.getElementById("openAiView"),
+    openAiJsApp: document.getElementById("openAiJsApp"),
     viewButtons: document.querySelectorAll("[data-open-view]"),
     installState: document.getElementById("installState"),
     appVersion: document.getElementById("appVersion"),
@@ -167,6 +168,10 @@
 
     elements.openAiView.addEventListener("click", function () {
       openView("ai");
+    });
+
+    elements.openAiJsApp.addEventListener("click", function () {
+      window.location.href = "ai_web/index.html";
     });
 
     elements.viewButtons.forEach(function (button) {

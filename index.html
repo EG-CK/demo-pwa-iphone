@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-app.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260421-v1.9.2">
+  <link rel="stylesheet" href="styles.css?v=20260421-v1.10.0">
   <title>Pulse OEE Demo</title>
 </head>
 <body>
@@ -40,6 +40,11 @@
             <p class="menu-card__eyebrow">IA Local</p>
             <h3>Mano OK / KO</h3>
             <p class="menu-card__text">Accede al capturador, al entrenamiento y a la verificacion del modelo para signos de mano.</p>
+          </button>
+          <button type="button" class="menu-card menu-card--accent" id="openAiJsApp">
+            <p class="menu-card__eyebrow">IA Web</p>
+            <h3>Mano OK / KO JS</h3>
+            <p class="menu-card__text">Modo 100% navegador con entrenamiento y prediccion local sin servidor Python.</p>
           </button>
         </div>
       </section>
@@ -198,6 +203,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.legacy.min.js"></script>
-  <script src="app.js?v=20260421-v1.9.2"></script>
+  <script src="app.js?v=20260421-v1.10.0"></script>
 </body>
 </html>
