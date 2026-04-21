@@ -3,19 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Consola de Entrenamiento IA</title>
+  <title>Consola Backend IA</title>
   <link rel="stylesheet" href="/console/styles.css">
 </head>
 <body>
   <main class="shell">
     <header class="hero">
       <div>
-        <p class="eyebrow">Backend local Python</p>
-        <h1>Consola de entrenamiento</h1>
-        <p class="hero__text">Gestiona dataset OK/KO, lanza entrenamientos y revisa el estado del modelo desde el navegador.</p>
+        <p class="eyebrow">Consola web separada</p>
+        <h1>Consola backend IA</h1>
+        <p class="hero__text">Controla backend, dataset, entrenamiento y verificacion desde navegador (recomendado en PC).</p>
       </div>
       <a class="hero__link" href="/capture">Abrir capturador</a>
     </header>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="section-label">Conexion</p>
+          <h2>Semaforo APP movil</h2>
+        </div>
+        <p class="status-chip status-chip--neutral">Chequeo cada 10 s</p>
+      </div>
+
+      <div class="traffic-card" id="trafficCard">
+        <div class="traffic-light traffic-light--off" id="trafficLight"></div>
+        <div>
+          <p class="traffic-title" id="trafficTitle">Sin contacto con la APP</p>
+          <p class="traffic-text" id="trafficText">Esperando heartbeat de la APP movil.</p>
+        </div>
+      </div>
+
+      <div class="table-card" id="trafficHelpCard">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Paso</th>
+              <th>Instruccion de conexion</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Inicia el servidor con <code>python ai_trainer\server.py</code>.</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Abre en el movil <code>/capture</code> con la IP de tu PC en la misma WiFi.</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Deja la pantalla de captura abierta. El semaforo pasara a verde al recibir heartbeat.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
     <section class="panel">
       <div class="section-head">

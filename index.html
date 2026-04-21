@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-app.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260421-v1.9.1">
+  <link rel="stylesheet" href="styles.css?v=20260421-v1.9.2">
   <title>Pulse OEE Demo</title>
 </head>
 <body>
@@ -147,15 +147,10 @@
         <section class="panel panel--overview">
           <div class="section-head">
             <div>
-              <p class="section-label">Servidor</p>
-              <h2>Control backend Python</h2>
+              <p class="section-label">Captura movil</p>
+              <h2>Flujo IA OK / KO</h2>
             </div>
-            <p class="mini-note" id="aiStatus">Pendiente de comprobacion</p>
-          </div>
-
-          <div class="ai-health">
-            <p class="ai-health__badge ai-health__badge--off" id="aiConnectionBadge">Desconectado</p>
-            <p class="ai-health__text" id="aiConnectionDetail">Todavia no hay conexion con el server.</p>
+            <p class="mini-note">Web movil limpia</p>
           </div>
 
           <div class="field-group">
@@ -164,33 +159,8 @@
           </div>
 
           <div class="scanner-actions">
-            <button type="button" class="action-button action-button--primary" id="copyAiStartCommand">Lanzar server</button>
-            <button type="button" class="action-button action-button--accent" id="checkAiHealth">Comprobar servidor</button>
-            <button type="button" class="action-button action-button--ghost" id="openAiCapture" disabled>Abrir capturador</button>
-            <button type="button" class="action-button action-button--ghost" id="openAiConsole" disabled>Abrir consola IA</button>
-          </div>
-
-          <div class="field-group">
-            <label for="aiStartCommand">Comando de arranque</label>
-            <input id="aiStartCommand" type="text" value=".\start_ai_trainer.bat" readonly>
-          </div>
-
-          <div class="kpi-grid">
-            <article class="kpi-card">
-              <p class="kpi-card__label">Total imagenes</p>
-              <p class="kpi-card__value" id="aiDatasetTotal">-</p>
-              <p class="kpi-card__hint">Detectado desde /api/status</p>
-            </article>
-            <article class="kpi-card">
-              <p class="kpi-card__label">OK</p>
-              <p class="kpi-card__value" id="aiDatasetOk">-</p>
-              <p class="kpi-card__hint">Muestras etiqueta OK</p>
-            </article>
-            <article class="kpi-card">
-              <p class="kpi-card__label">KO</p>
-              <p class="kpi-card__value" id="aiDatasetKo">-</p>
-              <p class="kpi-card__hint">Muestras etiqueta KO</p>
-            </article>
+            <button type="button" class="action-button action-button--primary" id="openAiCapture">Abrir capturador movil</button>
+            <button type="button" class="action-button action-button--ghost" id="openAiConsole">Abrir consola backend</button>
           </div>
 
           <div class="table-card">
@@ -204,15 +174,15 @@
               <tbody>
                 <tr>
                   <td>1</td>
-                  <td>Pulsa <strong>Lanzar server</strong> para copiar el comando y pegalo en PowerShell.</td>
+                  <td>Arranca el backend en tu PC con <code>python ai_trainer\server.py</code>.</td>
                 </tr>
                 <tr>
                   <td>2</td>
-                  <td>Usa <strong>Comprobar servidor</strong> hasta ver estado <strong>Conectado</strong>.</td>
+                  <td>Desde movil usa solo <strong>Abrir capturador movil</strong> para tomar muestras.</td>
                 </tr>
                 <tr>
                   <td>3</td>
-                  <td>Abre capturador y consola IA para entrenar y verificar el modelo.</td>
+                  <td>El entrenamiento y verificacion se hacen en la <strong>consola backend</strong> separada.</td>
                 </tr>
               </tbody>
             </table>
@@ -228,6 +198,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.legacy.min.js"></script>
-  <script src="app.js?v=20260421-v1.9.1"></script>
+  <script src="app.js?v=20260421-v1.9.2"></script>
 </body>
 </html>

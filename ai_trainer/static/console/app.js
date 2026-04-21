@@ -1,4 +1,6 @@
 (function () {
+  const STATUS_POLL_INTERVAL_MS = 10000;
+
   const elements = {
     totalImages: document.getElementById("totalImages"),
     okCount: document.getElementById("okCount"),
@@ -17,7 +19,12 @@
     predictMessage: document.getElementById("predictMessage"),
     predictLabel: document.getElementById("predictLabel"),
     predictConfidence: document.getElementById("predictConfidence"),
-    predictModel: document.getElementById("predictModel")
+    predictModel: document.getElementById("predictModel"),
+    trafficCard: document.getElementById("trafficCard"),
+    trafficLight: document.getElementById("trafficLight"),
+    trafficTitle: document.getElementById("trafficTitle"),
+    trafficText: document.getElementById("trafficText"),
+    trafficHelpCard: document.getElementById("trafficHelpCard")
   };
 
   init();
@@ -27,7 +34,7 @@
     elements.startTrainingButton.addEventListener("click", startTraining);
     elements.predictButton.addEventListener("click", predictImage);
     fetchStatus();
-    window.setInterval(fetchStatus, 2500);
+    window.setInterval(fetchStatus, STATUS_POLL_INTERVAL_MS);
   }
 
   async function fetchStatus() {
@@ -50,8 +57,36 @@
     if (!payload.model_available) {
       elements.predictMessage.textContent = "Todavia no hay modelo. Entrena primero para poder predecir.";
     }
+    renderTrafficLight(payload.app_contact);
     renderMetrics(payload.training.metrics);
     renderRecords(payload.recent_records);
+  }
+
+  function renderTrafficLight(appContact) {
+    const connected = Boolean(appContact && appContact.is_connected);
+    const lastContactAt = appContact && appContact.last_contact_at ? appContact.last_contact_at : "";
+    const source = appContact && appContact.last_source ? appContact.last_source : "sin fuente";
+    const seconds = appContact && typeof appContact.seconds_since_last_contact === "number"
+      ? appContact.seconds_since_last_contact
+      : null;
+
+    elements.trafficLight.classList.toggle("traffic-light--on", connected);
+    elements.trafficLight.classList.toggle("traffic-light--off", !connected);
+    elements.trafficHelpCard.hidden = connected;
+
+    if (connected) {
+      elements.trafficTitle.textContent = "En contacto con la APP";
+      elements.trafficText.textContent = "Ultimo heartbeat: " + formatDate(lastContactAt) + " | Fuente: " + source + ".";
+      return;
+    }
+
+    elements.trafficTitle.textContent = "Sin contacto con la APP";
+    if (seconds === null) {
+      elements.trafficText.textContent = "Aun no se ha recibido ningun heartbeat desde la APP movil.";
+      return;
+    }
+
+    elements.trafficText.textContent = "Ultimo contacto hace " + seconds + " s. Revisa los pasos de conexion.";
   }
 
   function renderMetrics(metrics) {
@@ -174,7 +209,13 @@
   }
 
   function formatDate(value) {
+    if (!value) {
+      return "-";
+    }
     const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "-";
+    }
     return date.toLocaleString("es-ES");
   }
 }());

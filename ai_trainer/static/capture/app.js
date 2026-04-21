@@ -1,7 +1,10 @@
 (function () {
+  const HEARTBEAT_INTERVAL_MS = 10000;
+
   const state = {
     stream: null,
-    imageData: ""
+    imageData: "",
+    heartbeatTimer: null
   };
 
   const elements = {
@@ -20,6 +23,7 @@
   function init() {
     bindEvents();
     updateControls();
+    startHeartbeat();
   }
 
   function bindEvents() {
@@ -32,6 +36,7 @@
     elements.saveKoButton.addEventListener("click", function () {
       uploadImage("ko");
     });
+    window.addEventListener("beforeunload", stopHeartbeat);
   }
 
   function updateControls() {
@@ -116,6 +121,7 @@
 
       elements.captureStatus.textContent = "Imagen guardada correctamente como " + label.toUpperCase() + ".";
       retakePhoto();
+      sendHeartbeat();
     } catch (error) {
       elements.captureStatus.textContent = error.message || "No se pudo guardar la imagen.";
     } finally {
@@ -135,6 +141,35 @@
         track.stop();
       });
       state.stream = null;
+    }
+  }
+
+  function startHeartbeat() {
+    sendHeartbeat();
+    stopHeartbeat();
+    state.heartbeatTimer = window.setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
+  }
+
+  function stopHeartbeat() {
+    if (state.heartbeatTimer) {
+      window.clearInterval(state.heartbeatTimer);
+      state.heartbeatTimer = null;
+    }
+  }
+
+  async function sendHeartbeat() {
+    try {
+      await fetch("/api/app-heartbeat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          source: "mobile-capture"
+        })
+      });
+    } catch (error) {
+      // Silencioso: no bloquea la captura por una caida puntual de red.
     }
   }
 }());

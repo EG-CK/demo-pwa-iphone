@@ -33,6 +33,7 @@ HOST = "0.0.0.0"
 PORT = 8765
 IMAGE_SIZE = 128
 SUPPORTED_LABELS = ("ok", "ko")
+APP_CONTACT_TIMEOUT_SECONDS = 20
 
 
 def ensure_storage() -> None:
@@ -176,6 +177,48 @@ class TrainerState:
 
 
 trainer_state = TrainerState()
+
+
+class AppContactState:
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.last_contact_at: str | None = None
+        self.last_source = "desconocido"
+        self.last_user_agent = ""
+
+    def touch(self, source: str, user_agent: str = "") -> str:
+        timestamp = now_iso()
+        with self.lock:
+            self.last_contact_at = timestamp
+            self.last_source = source or "desconocido"
+            self.last_user_agent = user_agent
+        return timestamp
+
+    def snapshot(self) -> dict[str, Any]:
+        with self.lock:
+            last_contact_at = self.last_contact_at
+            last_source = self.last_source
+            last_user_agent = self.last_user_agent
+
+        seconds_since_last_contact: int | None = None
+        is_connected = False
+        if last_contact_at:
+            last_dt = datetime.fromisoformat(last_contact_at)
+            delta = datetime.now() - last_dt
+            seconds_since_last_contact = max(0, int(delta.total_seconds()))
+            is_connected = seconds_since_last_contact <= APP_CONTACT_TIMEOUT_SECONDS
+
+        return {
+            "is_connected": is_connected,
+            "last_contact_at": last_contact_at,
+            "seconds_since_last_contact": seconds_since_last_contact,
+            "last_source": last_source,
+            "timeout_seconds": APP_CONTACT_TIMEOUT_SECONDS,
+            "last_user_agent": last_user_agent,
+        }
+
+
+app_contact_state = AppContactState()
 
 
 def collect_counts() -> dict[str, int]:
@@ -334,6 +377,19 @@ def save_uploaded_image(payload: dict[str, Any]) -> dict[str, Any]:
     return record
 
 
+def register_app_contact(payload: dict[str, Any], user_agent: str = "") -> dict[str, Any]:
+    source = str(payload.get("source", "app")).strip().lower() or "app"
+    touched_at = app_contact_state.touch(source=source, user_agent=user_agent)
+    return {
+        "ok": True,
+        "message": "Heartbeat recibido.",
+        "contact": {
+            "source": source,
+            "touched_at": touched_at,
+        },
+    }
+
+
 def build_status_payload() -> dict[str, Any]:
     records = load_records()
     counts = collect_counts()
@@ -343,6 +399,7 @@ def build_status_payload() -> dict[str, Any]:
         "total_images": sum(counts.values()),
         "recent_records": records[:12],
         "model_available": latest_model_path.exists(),
+        "app_contact": app_contact_state.snapshot(),
         "training": trainer_state.snapshot(),
     }
 
@@ -460,9 +517,14 @@ class AppHandler(BaseHTTPRequestHandler):
         if route == "/api/upload-image":
             try:
                 record = save_uploaded_image(payload)
+                register_app_contact(payload, user_agent=self.headers.get("User-Agent", ""))
                 return json_response(self, {"ok": True, "record": record})
             except Exception as error:
                 return json_response(self, {"ok": False, "message": str(error)}, status=400)
+
+        if route == "/api/app-heartbeat":
+            heartbeat = register_app_contact(payload, user_agent=self.headers.get("User-Agent", ""))
+            return json_response(self, heartbeat)
 
         if route == "/api/train":
             result = start_training(payload)

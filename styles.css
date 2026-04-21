@@ -258,49 +258,6 @@ input {
   color: var(--muted);
 }
 
-.ai-health {
-  margin-top: 14px;
-  padding: 12px 14px;
-  border-radius: var(--radius-md);
-  background: rgba(15, 95, 75, 0.06);
-  border: 1px solid rgba(15, 95, 75, 0.1);
-}
-
-.ai-health__badge,
-.ai-health__text {
-  margin: 0;
-}
-
-.ai-health__badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.ai-health__badge--on {
-  background: rgba(15, 95, 75, 0.14);
-  color: var(--brand);
-}
-
-.ai-health__badge--off {
-  background: rgba(183, 75, 75, 0.14);
-  color: var(--danger);
-}
-
-.ai-health__text {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 0.88rem;
-  line-height: 1.35;
-}
-
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

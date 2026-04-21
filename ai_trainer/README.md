@@ -16,7 +16,7 @@ python ai_trainer\server.py
 
 URLs:
 
-- Consola: `http://127.0.0.1:8765/console`
+- Consola backend (separada, recomendada en navegador PC): `http://127.0.0.1:8765/console`
 - Capturador movil: `http://127.0.0.1:8765/capture`
 
 ## Estructura
