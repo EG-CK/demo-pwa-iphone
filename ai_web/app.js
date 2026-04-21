@@ -12,7 +12,9 @@
     samples: [],
     model: null,
     training: false,
-    predicting: false
+    predicting: false,
+    trainingStartedAt: 0,
+    trainingPulseTimer: null
   };
 
   var elements = {
@@ -271,6 +273,7 @@
     var batchSize = Math.max(2, Math.min(32, Number(elements.batchInput.value) || 8));
 
     state.training = true;
+    elements.trainButton.textContent = "Entrenando...";
     elements.trainingProgress.style.width = "0%";
     elements.modelState.textContent = "Entrenando...";
     elements.trainStatus.textContent = "Preparando dataset...";
@@ -295,12 +298,36 @@
         metrics: ["accuracy"]
       });
 
+      var effectiveBatchSize = Math.min(batchSize, state.samples.length);
+      var trainSize = Math.max(1, Math.ceil(state.samples.length * 0.8));
+      var batchesPerEpoch = Math.max(1, Math.ceil(trainSize / effectiveBatchSize));
+      var currentEpochNumber = 1;
+      var currentEpochBatchOffset = 0;
+      state.trainingStartedAt = Date.now();
+      startTrainingPulse();
+
+      await tf.nextFrame();
       await state.model.fit(xs, ys, {
         epochs: epochs,
-        batchSize: Math.min(batchSize, state.samples.length),
+        batchSize: effectiveBatchSize,
         validationSplit: 0.2,
         shuffle: true,
         callbacks: {
+          onBatchEnd: async function (batch) {
+            var totalBatches = epochs * batchesPerEpoch;
+            var completedBatches = Math.min(totalBatches, currentEpochBatchOffset + batch + 1);
+            var progress = Math.max(2, Math.min(98, Math.round((completedBatches / totalBatches) * 100)));
+            elements.trainingProgress.style.width = progress + "%";
+            elements.trainStatus.textContent = "Entrenando... " + progress + "%";
+            elements.trainingDetail.textContent = "Epoca " + currentEpochNumber + " de " + epochs + " | lote " + (batch + 1) + " de " + batchesPerEpoch + " | " + elapsedTrainingSeconds() + " s";
+            await tf.nextFrame();
+          },
+          onEpochBegin: function (epoch) {
+            currentEpochNumber = epoch + 1;
+            currentEpochBatchOffset = epoch * batchesPerEpoch;
+            elements.trainStatus.textContent = "Entrenando: epoca " + currentEpochNumber + " de " + epochs + ".";
+            elements.trainingDetail.textContent = "Procesando lotes... " + elapsedTrainingSeconds() + " s";
+          },
           onEpochEnd: function (epoch, logs) {
             var trainAcc = logs.acc || logs.accuracy || 0;
             var valAcc = logs.val_acc || logs.val_accuracy || 0;
@@ -331,6 +358,8 @@
         ys.dispose();
       }
       state.training = false;
+      elements.trainButton.textContent = "Entrenar modelo";
+      stopTrainingPulse();
       renderTrainingReadiness();
       updateButtons();
     }
@@ -353,6 +382,31 @@
     }
     renderTrainingReadiness();
     updateButtons();
+  }
+
+  function startTrainingPulse() {
+    stopTrainingPulse();
+    state.trainingPulseTimer = window.setInterval(function () {
+      if (!state.training) {
+        return;
+      }
+      var seconds = elapsedTrainingSeconds();
+      elements.trainingDetail.textContent = elements.trainingDetail.textContent.replace(/ \| [0-9]+ s$/, "") + " | " + seconds + " s";
+    }, 700);
+  }
+
+  function stopTrainingPulse() {
+    if (state.trainingPulseTimer) {
+      window.clearInterval(state.trainingPulseTimer);
+      state.trainingPulseTimer = null;
+    }
+  }
+
+  function elapsedTrainingSeconds() {
+    if (!state.trainingStartedAt) {
+      return 0;
+    }
+    return Math.max(0, Math.round((Date.now() - state.trainingStartedAt) / 1000));
   }
 
   async function predictSnapshot() {

@@ -161,8 +161,12 @@ canvas { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
   width: 0%;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--brand), var(--ok));
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.18) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0.18) 75%, transparent 75%),
+    linear-gradient(90deg, var(--brand), var(--ok));
+  background-size: 28px 28px, 100% 100%;
   transition: width 180ms ease;
+  animation: progress-stripes 900ms linear infinite;
 }
 .training-detail {
   margin: 8px 0 0;
@@ -175,4 +179,9 @@ canvas { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
   .field-grid,
   .kpis,
   .hero { grid-template-columns: 1fr; display: grid; }
+}
+
+@keyframes progress-stripes {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 28px 0, 0 0; }
 }
