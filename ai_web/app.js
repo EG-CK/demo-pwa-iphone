@@ -198,7 +198,7 @@
     elements.predictCanvas.hidden = false;
     elements.predictStatus.textContent = state.model
       ? "Foto capturada. Pulsa Predecir OK/KO."
-      : "Foto capturada. Entrena un modelo antes de predecir.";
+      : "Foto capturada. Puedes pulsar Predecir OK/KO cuando tengas un modelo entrenado.";
     updateButtons();
   }
 
@@ -500,7 +500,7 @@
     elements.trainButton.disabled = state.training;
     elements.takePredictPhotoButton.disabled = !hasPredictStream || state.training;
     elements.retakePredictPhotoButton.disabled = !hasPredictImage || state.training;
-    elements.predictButton.disabled = !hasModel || !hasPredictImage || state.training;
+    elements.predictButton.disabled = !hasPredictImage || state.training;
     elements.deleteModelButton.disabled = state.training;
     elements.deleteDataButton.disabled = state.training;
     elements.startCameraButton.disabled = state.training;
