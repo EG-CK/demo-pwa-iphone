@@ -85,10 +85,8 @@
   async function startCamera() {
     try {
       stopStream();
-      state.stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false
-      });
+      state.stream = await requestCameraStream();
+      prepareVideoElement(elements.cameraVideo);
       elements.cameraVideo.srcObject = state.stream;
       await elements.cameraVideo.play();
       elements.snapshotCanvas.hidden = true;
@@ -97,7 +95,8 @@
       elements.captureStatus.textContent = "Camara lista. Captura una foto de la mano.";
       updateButtons();
     } catch (error) {
-      elements.captureStatus.textContent = "No se pudo abrir la camara.";
+      elements.captureStatus.textContent = cameraErrorMessage(error);
+      updateButtons();
     }
   }
 
@@ -158,10 +157,8 @@
   async function startPredictCamera() {
     try {
       stopStream();
-      state.predictStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false
-      });
+      state.predictStream = await requestCameraStream();
+      prepareVideoElement(elements.predictVideo);
       elements.predictVideo.srcObject = state.predictStream;
       await elements.predictVideo.play();
       elements.predictCanvas.hidden = true;
@@ -170,7 +167,8 @@
       elements.predictStatus.textContent = "Camara lista. Captura una foto para predecir.";
       updateButtons();
     } catch (error) {
-      elements.predictStatus.textContent = "No se pudo abrir la camara.";
+      elements.predictStatus.textContent = cameraErrorMessage(error);
+      updateButtons();
     }
   }
 
@@ -415,6 +413,62 @@
     var context = target.getContext("2d");
     context.drawImage(sourceCanvas, 0, 0, IMAGE_SIZE, IMAGE_SIZE);
     return target.toDataURL("image/jpeg", 0.86);
+  }
+
+  async function requestCameraStream() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error("camera-api-unavailable");
+    }
+
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+    } catch (error) {
+      if (error && (error.name === "NotAllowedError" || error.name === "SecurityError")) {
+        throw error;
+      }
+
+      return navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
+      });
+    }
+  }
+
+  function prepareVideoElement(videoElement) {
+    videoElement.setAttribute("autoplay", "");
+    videoElement.setAttribute("muted", "");
+    videoElement.setAttribute("playsinline", "");
+    videoElement.setAttribute("webkit-playsinline", "true");
+  }
+
+  function cameraErrorMessage(error) {
+    if (!window.isSecureContext) {
+      return "La camara solo funciona en HTTPS. Abre la app desde GitHub Pages o como PWA instalada.";
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      return "Este navegador no permite abrir la camara desde esta pagina.";
+    }
+
+    var name = error && error.name ? error.name : "";
+    if (name === "NotAllowedError" || name === "SecurityError") {
+      return "Permiso de camara denegado. Activalo en los permisos del navegador y vuelve a intentar.";
+    }
+    if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+      return "No se encontro ninguna camara disponible en este dispositivo.";
+    }
+    if (name === "NotReadableError" || name === "TrackStartError") {
+      return "La camara esta ocupada por otra app. Cierrala y vuelve a intentar.";
+    }
+
+    return "No se pudo abrir la camara. Revisa permisos del navegador.";
   }
 
   function stopStream() {
