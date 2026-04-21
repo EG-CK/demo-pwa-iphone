@@ -10,7 +10,8 @@
     predictImageData: "",
     samples: [],
     model: null,
-    training: false
+    training: false,
+    predicting: false
   };
 
   var elements = {
@@ -213,19 +214,25 @@
   }
 
   function renderCounts() {
-    var ok = state.samples.filter(function (item) { return item.label === "ok"; }).length;
-    var ko = state.samples.filter(function (item) { return item.label === "ko"; }).length;
+    var counts = getSampleCounts();
+    var ok = counts.ok;
+    var ko = counts.ko;
     elements.totalCount.textContent = String(state.samples.length);
     elements.okCount.textContent = String(ok);
     elements.koCount.textContent = String(ko);
   }
 
   async function trainModel() {
+    if (!window.tf) {
+      elements.trainStatus.textContent = "No se pudo cargar TensorFlow. Abre la app con internet y actualiza.";
+      return false;
+    }
+
     var okSamples = state.samples.filter(function (item) { return item.label === "ok"; });
     var koSamples = state.samples.filter(function (item) { return item.label === "ko"; });
     if (okSamples.length < 5 || koSamples.length < 5) {
       elements.trainStatus.textContent = "Necesitas al menos 5 muestras OK y 5 muestras KO.";
-      return;
+      return false;
     }
 
     var epochs = Math.max(1, Math.min(40, Number(elements.epochsInput.value) || 8));
@@ -268,8 +275,10 @@
       await state.model.save(MODEL_KEY);
       elements.modelState.textContent = "Modelo entrenado";
       elements.trainStatus.textContent = "Entrenamiento completado y modelo guardado en el navegador.";
+      return true;
     } catch (error) {
       elements.trainStatus.textContent = "No se pudo entrenar: " + (error && error.message ? error.message : "error desconocido");
+      return false;
     } finally {
       if (xs) {
         xs.dispose();
@@ -283,6 +292,12 @@
   }
 
   async function loadModel() {
+    if (!window.tf) {
+      elements.modelState.textContent = "TensorFlow sin cargar";
+      updateButtons();
+      return;
+    }
+
     try {
       state.model = await tf.loadLayersModel(MODEL_KEY);
       elements.modelState.textContent = "Modelo cargado";
@@ -293,19 +308,44 @@
   }
 
   async function predictSnapshot() {
-    if (!state.model) {
-      elements.predictStatus.textContent = "Entrena o carga un modelo antes de predecir.";
-      return;
-    }
     if (!state.predictImageData) {
       elements.predictStatus.textContent = "Captura una foto antes de predecir.";
       return;
     }
 
+    if (!window.tf) {
+      elements.predictStatus.textContent = "No se pudo cargar TensorFlow. Abre la app con internet y actualiza.";
+      return;
+    }
+
+    state.predicting = true;
+    elements.predictLabel.textContent = "-";
+    elements.predictConfidence.textContent = "-";
+    elements.predictStatus.textContent = "Preparando prediccion...";
+    updateButtons();
+
     try {
+      if (!state.model) {
+        var counts = getSampleCounts();
+        if (counts.ok < 5 || counts.ko < 5) {
+          elements.predictStatus.textContent = "Primero guarda minimo 5 fotos OK y 5 fotos KO, y entrena el modelo.";
+          return;
+        }
+
+        elements.predictStatus.textContent = "Modelo no entrenado. Entrenando automaticamente...";
+        var trained = await trainModel();
+        if (!trained || !state.model) {
+          elements.predictStatus.textContent = "No se pudo preparar el modelo para predecir.";
+          return;
+        }
+      }
+
       await runPrediction(state.predictImageData);
     } catch (error) {
-      elements.predictStatus.textContent = "No se pudo predecir la foto.";
+      elements.predictStatus.textContent = "No se pudo predecir: " + (error && error.message ? error.message : "error desconocido");
+    } finally {
+      state.predicting = false;
+      updateButtons();
     }
   }
 
@@ -332,6 +372,14 @@
   }
 
   async function clearModel() {
+    if (!window.tf) {
+      state.model = null;
+      elements.modelState.textContent = "Modelo sin cargar";
+      elements.predictStatus.textContent = "Modelo eliminado de la pantalla.";
+      updateButtons();
+      return;
+    }
+
     try {
       await tf.io.removeModel(MODEL_KEY);
     } catch (error) {
@@ -365,6 +413,18 @@
     model.add(tf.layers.dropout({ rate: 0.2 }));
     model.add(tf.layers.dense({ units: 1, activation: "sigmoid" }));
     return model;
+  }
+
+  function getSampleCounts() {
+    return state.samples.reduce(function (counts, item) {
+      if (item.label === "ok") {
+        counts.ok += 1;
+      }
+      if (item.label === "ko") {
+        counts.ko += 1;
+      }
+      return counts;
+    }, { ok: 0, ko: 0 });
   }
 
   async function samplesToTensors(samples) {
@@ -493,17 +553,17 @@
     var hasStream = Boolean(state.stream);
     var hasPredictStream = Boolean(state.predictStream);
 
-    elements.takePhotoButton.disabled = !hasStream || state.training;
-    elements.retakeButton.disabled = !hasImage || state.training;
-    elements.saveOkButton.disabled = !hasImage || state.training;
-    elements.saveKoButton.disabled = !hasImage || state.training;
-    elements.trainButton.disabled = state.training;
-    elements.takePredictPhotoButton.disabled = !hasPredictStream || state.training;
-    elements.retakePredictPhotoButton.disabled = !hasPredictImage || state.training;
-    elements.predictButton.disabled = !hasPredictImage || state.training;
-    elements.deleteModelButton.disabled = state.training;
-    elements.deleteDataButton.disabled = state.training;
-    elements.startCameraButton.disabled = state.training;
-    elements.startPredictCameraButton.disabled = state.training;
+    elements.takePhotoButton.disabled = !hasStream || state.training || state.predicting;
+    elements.retakeButton.disabled = !hasImage || state.training || state.predicting;
+    elements.saveOkButton.disabled = !hasImage || state.training || state.predicting;
+    elements.saveKoButton.disabled = !hasImage || state.training || state.predicting;
+    elements.trainButton.disabled = state.training || state.predicting;
+    elements.takePredictPhotoButton.disabled = !hasPredictStream || state.training || state.predicting;
+    elements.retakePredictPhotoButton.disabled = !hasPredictImage || state.training || state.predicting;
+    elements.predictButton.disabled = !hasPredictImage || state.training || state.predicting;
+    elements.deleteModelButton.disabled = state.training || state.predicting;
+    elements.deleteDataButton.disabled = state.training || state.predicting;
+    elements.startCameraButton.disabled = state.training || state.predicting;
+    elements.startPredictCameraButton.disabled = state.training || state.predicting;
   }
 }());

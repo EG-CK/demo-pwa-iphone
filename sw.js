@@ -1,12 +1,12 @@
-const CACHE_NAME = "pulse-oee-demo-v23";
+const CACHE_NAME = "pulse-oee-demo-v24";
 const APP_FILES = [
   "./",
   "./index.html",
-  "./styles.css?v=20260421-v1.14.0",
-  "./app.js?v=20260421-v1.14.0",
-  "./ai_web/index.html?v=20260421-v1.14.0",
-  "./ai_web/styles.css?v=20260421-v1.14.0",
-  "./ai_web/app.js?v=20260421-v1.14.0",
+  "./styles.css?v=20260421-v1.15.0",
+  "./app.js?v=20260421-v1.15.0",
+  "./ai_web/index.html?v=20260421-v1.15.0",
+  "./ai_web/styles.css?v=20260421-v1.15.0",
+  "./ai_web/app.js?v=20260421-v1.15.0",
   "./manifest.webmanifest",
   "./icons/icon-app.svg",
   "./icons/apple-touch-icon.svg"
