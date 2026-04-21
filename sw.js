@@ -1,13 +1,13 @@
-const CACHE_NAME = "pulse-oee-demo-v24";
+const CACHE_NAME = "qr-okko-v25";
 const APP_FILES = [
   "./",
   "./index.html",
-  "./styles.css?v=20260421-v1.15.0",
-  "./app.js?v=20260421-v1.15.0",
-  "./ai_web/index.html?v=20260421-v1.15.0",
-  "./ai_web/styles.css?v=20260421-v1.15.0",
-  "./ai_web/app.js?v=20260421-v1.15.0",
-  "./manifest.webmanifest",
+  "./styles.css?v=20260421-v1.16.0",
+  "./app.js?v=20260421-v1.16.0",
+  "./ai_web/index.html?v=20260421-v1.16.0",
+  "./ai_web/styles.css?v=20260421-v1.16.0",
+  "./ai_web/app.js?v=20260421-v1.16.0",
+  "./manifest.webmanifest?v=20260421-v1.16.0",
   "./icons/icon-app.svg",
   "./icons/apple-touch-icon.svg"
 ];

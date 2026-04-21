@@ -1,7 +1,7 @@
 {
-  "name": "Pulse OEE Demo",
-  "short_name": "Pulse OEE",
-  "description": "Demo PWA de productividad OEE y toneladas por linea de produccion.",
+  "name": "QR e IA OK/KO",
+  "short_name": "QR OK/KO",
+  "description": "PWA movil para lectura QR y evaluacion OK/KO.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0f5f4b">
-  <meta name="description" content="Demo PWA de productividad por linea y turno.">
-  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="description" content="PWA movil para lectura QR e IA OK/KO.">
+  <link rel="manifest" href="manifest.webmanifest?v=20260421-v1.16.0">
   <link rel="icon" href="icons/icon-app.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260421-v1.15.0">
-  <title>Pulse OEE Demo</title>
+  <link rel="stylesheet" href="styles.css?v=20260421-v1.16.0">
+  <title>QR e IA OK/KO</title>
 </head>
 <body>
   <div class="app-shell">
@@ -26,15 +26,10 @@
         </div>
 
         <div class="menu-grid">
-          <button type="button" class="menu-card" id="openOeeView">
-            <p class="menu-card__eyebrow">Produccion</p>
-            <h3>OEE y turnos</h3>
-            <p class="menu-card__text">Consulta el resumen del dia, cambia fecha y compara turnos por linea.</p>
-          </button>
           <button type="button" class="menu-card menu-card--accent" id="openQrView">
             <p class="menu-card__eyebrow">Captura</p>
             <h3>Lector QR</h3>
-            <p class="menu-card__text">Abre la camara, encuadra el codigo y guarda lecturas QR sin datos de OEE ni turnos.</p>
+            <p class="menu-card__text">Abre la camara, encuadra el codigo y guarda lecturas QR en el movil.</p>
           </button>
           <button type="button" class="menu-card menu-card--accent" id="openAiJsApp">
             <p class="menu-card__eyebrow">IA movil</p>
@@ -42,31 +37,6 @@
             <p class="menu-card__text">Captura muestras, entrena y predice desde el movil sin servidor externo.</p>
           </button>
         </div>
-      </section>
-
-      <section id="oeeView" hidden>
-        <div class="module-head">
-          <button type="button" class="module-back" data-open-view="home">Volver al menu</button>
-          <div>
-            <p class="section-label">Produccion</p>
-            <h2>OEE y turnos</h2>
-          </div>
-        </div>
-
-        <section class="panel panel--overview">
-          <div class="section-head">
-            <div>
-              <p class="section-label">Resumen</p>
-              <h2>Vista rapida del ultimo dia</h2>
-            </div>
-            <p class="mini-note" id="trendNote"></p>
-          </div>
-          <div class="chart-card">
-            <div class="chart chart--compact" id="trendChart" aria-label="Comparativa del ultimo dia"></div>
-          </div>
-        </section>
-
-        <div id="lineBoards" class="line-boards"></div>
       </section>
 
       <section id="qrView" hidden>
@@ -143,6 +113,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.legacy.min.js"></script>
-  <script src="app.js?v=20260421-v1.15.0"></script>
+  <script src="app.js?v=20260421-v1.16.0"></script>
 </body>
 </html>

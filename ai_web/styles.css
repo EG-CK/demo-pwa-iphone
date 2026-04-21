@@ -57,6 +57,32 @@ body {
   border: 1px solid transparent;
 }
 .hero__link { background: #f7fffc; color: #0f6450; }
+.screen-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 5px;
+  border-radius: 18px;
+  background: rgba(15, 100, 80, 0.1);
+}
+.tab-button {
+  min-height: 46px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 800;
+}
+.tab-button.is-active {
+  background: #ffffff;
+  color: var(--brand);
+  box-shadow: 0 10px 20px rgba(15, 95, 75, 0.12);
+}
+.screen {
+  display: grid;
+  gap: 14px;
+}
 .panel {
   padding: 18px;
   background: var(--surface);
@@ -89,7 +115,7 @@ canvas { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
 .action-row,
 .field-grid,
 .kpis { display: grid; gap: 10px; margin-top: 14px; }
-.action-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.action-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .action-row { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .field-grid,
 .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -111,6 +137,38 @@ canvas { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
 .kpi { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: #fff; }
 .kpi__label { margin: 0; color: var(--muted); }
 .kpi__value { margin: 10px 0 0; font-size: 2rem; font-weight: 800; }
+.kpis--result { grid-template-columns: 1.2fr 1fr; }
+.kpi--result .kpi__value { font-size: 2.6rem; }
+.training-readiness {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(15, 100, 80, 0.1);
+  color: var(--brand);
+  font-weight: 800;
+}
+.training-status {
+  margin-top: 14px;
+}
+.progress-track {
+  height: 12px;
+  margin-top: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(15, 100, 80, 0.12);
+}
+.progress-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand), var(--ok));
+  transition: width 180ms ease;
+}
+.training-detail {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
 @media (max-width: 880px) {
   .action-grid { grid-template-columns: 1fr 1fr; }
   .action-row,

@@ -1,118 +1,133 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>IA Mano OK/KO - JS</title>
-  <link rel="stylesheet" href="./styles.css?v=20260421-v1.15.0">
+  <title>IA Mano OK/KO</title>
+  <link rel="stylesheet" href="./styles.css?v=20260421-v1.16.0">
 </head>
 <body>
   <main class="shell">
     <header class="hero">
       <div>
-        <p class="eyebrow">Modo navegador</p>
-        <h1>IA Mano OK/KO</h1>
-        <p class="hero__text">Captura muestras, entrena y predice en el propio navegador del movil.</p>
+        <p class="eyebrow">IA movil</p>
+        <h1>Mano OK/KO</h1>
+        <p class="hero__text">Entrena el modelo con muestras y evalua nuevas fotos desde el movil.</p>
       </div>
-      <a class="hero__link" href="../index.html?update=20260421-v1.15.0">Volver al menu</a>
+      <a class="hero__link" href="../index.html?update=20260421-v1.16.0">Volver al menu</a>
     </header>
 
-    <section class="panel">
-      <div class="section-head">
-        <div>
-          <p class="section-label">Captura</p>
-          <h2>Muestras de entrenamiento</h2>
+    <nav class="screen-tabs" aria-label="Pantallas OK/KO">
+      <button type="button" class="tab-button is-active" data-screen="training">Entrenamiento</button>
+      <button type="button" class="tab-button" data-screen="evaluation">Evaluacion</button>
+    </nav>
+
+    <section class="screen" id="trainingScreen">
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <p class="section-label">Entrenamiento</p>
+            <h2>Captura de muestras</h2>
+          </div>
+          <p class="status-chip" id="modelState">Modelo sin cargar</p>
         </div>
-        <p class="status-chip" id="modelState">Modelo sin cargar</p>
-      </div>
 
-      <div class="camera-wrap">
-        <video id="cameraVideo" playsinline muted></video>
-        <canvas id="snapshotCanvas" hidden></canvas>
-        <p class="helper" id="captureStatus">Inicia la camara para empezar.</p>
-      </div>
+        <div class="camera-wrap">
+          <video id="trainingVideo" playsinline muted></video>
+          <canvas id="trainingCanvas" hidden></canvas>
+          <p class="helper" id="captureStatus">Abriendo camara...</p>
+        </div>
 
-      <div class="action-grid">
-        <button type="button" class="btn btn--primary" id="startCameraButton">Iniciar camara</button>
-        <button type="button" class="btn" id="takePhotoButton">Capturar</button>
-        <button type="button" class="btn" id="retakeButton">Repetir</button>
-        <button type="button" class="btn btn--ok" id="saveOkButton">Muestra OK</button>
-        <button type="button" class="btn btn--ko" id="saveKoButton">Muestra KO</button>
-      </div>
+        <div class="action-grid">
+          <button type="button" class="btn" id="takeTrainingPhotoButton">Capturar</button>
+          <button type="button" class="btn" id="retakeTrainingButton">Repetir</button>
+          <button type="button" class="btn btn--ok" id="saveOkButton">Muestra OK</button>
+          <button type="button" class="btn btn--ko" id="saveKoButton">Muestra KO</button>
+        </div>
 
-      <div class="kpis">
-        <article class="kpi">
-          <p class="kpi__label">Total</p>
-          <p class="kpi__value" id="totalCount">0</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi__label">OK</p>
-          <p class="kpi__value" id="okCount">0</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi__label">KO</p>
-          <p class="kpi__value" id="koCount">0</p>
-        </article>
-      </div>
+        <div class="kpis">
+          <article class="kpi">
+            <p class="kpi__label">Total</p>
+            <p class="kpi__value" id="totalCount">0</p>
+          </article>
+          <article class="kpi">
+            <p class="kpi__label">OK</p>
+            <p class="kpi__value" id="okCount">0</p>
+          </article>
+          <article class="kpi">
+            <p class="kpi__label">KO</p>
+            <p class="kpi__value" id="koCount">0</p>
+          </article>
+        </div>
+
+        <div class="training-readiness" id="trainingReadiness">Calculando muestras necesarias...</div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <p class="section-label">Modelo</p>
+            <h2>Entrenar</h2>
+          </div>
+        </div>
+
+        <div class="field-grid">
+          <label class="field"><span>Epocas</span><input id="epochsInput" type="number" min="1" max="40" value="8"></label>
+          <label class="field"><span>Batch size</span><input id="batchInput" type="number" min="2" max="32" value="8"></label>
+        </div>
+
+        <div class="action-row">
+          <button type="button" class="btn btn--primary" id="trainButton">Entrenar modelo</button>
+          <button type="button" class="btn" id="deleteDataButton">Borrar muestras</button>
+          <button type="button" class="btn" id="deleteModelButton">Borrar modelo</button>
+        </div>
+
+        <div class="training-status">
+          <p class="helper" id="trainStatus">Necesitas muestras OK y KO para entrenar.</p>
+          <div class="progress-track" aria-hidden="true">
+            <div class="progress-fill" id="trainingProgress"></div>
+          </div>
+          <p class="training-detail" id="trainingDetail">Sin entrenamiento en curso.</p>
+        </div>
+      </section>
     </section>
 
-    <section class="panel">
-      <div class="section-head">
-        <div>
-          <p class="section-label">Entrenamiento</p>
-          <h2>Modelo local</h2>
+    <section class="screen" id="evaluationScreen" hidden>
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <p class="section-label">Evaluacion</p>
+            <h2>Prediccion OK/KO</h2>
+          </div>
         </div>
-      </div>
 
-      <div class="field-grid">
-        <label class="field"><span>Epocas</span><input id="epochsInput" type="number" min="1" max="40" value="8"></label>
-        <label class="field"><span>Batch size</span><input id="batchInput" type="number" min="2" max="32" value="8"></label>
-      </div>
-
-      <div class="action-row">
-        <button type="button" class="btn btn--primary" id="trainButton">Entrenar modelo</button>
-        <button type="button" class="btn" id="deleteDataButton">Borrar dataset</button>
-        <button type="button" class="btn" id="deleteModelButton">Borrar modelo</button>
-      </div>
-
-      <p class="helper" id="trainStatus">Necesitas al menos 5 OK y 5 KO para entrenar.</p>
-    </section>
-
-    <section class="panel">
-      <div class="section-head">
-        <div>
-          <p class="section-label">Verificacion</p>
-          <h2>Prediccion</h2>
+        <div class="camera-wrap">
+          <video id="evaluationVideo" playsinline muted></video>
+          <canvas id="evaluationCanvas" hidden></canvas>
+          <p class="helper" id="predictStatus">Abriendo camara...</p>
         </div>
-      </div>
 
-      <div class="camera-wrap">
-        <video id="predictVideo" playsinline muted hidden></video>
-        <canvas id="predictCanvas" hidden></canvas>
-        <p class="helper" id="predictStatus">Inicia la camara para tomar una foto y predecir.</p>
-      </div>
+        <div class="action-row">
+          <button type="button" class="btn" id="takeEvaluationPhotoButton">Capturar foto</button>
+          <button type="button" class="btn" id="retakeEvaluationButton">Repetir</button>
+          <button type="button" class="btn btn--primary" id="predictButton">Predecir OK/KO</button>
+        </div>
 
-      <div class="action-row">
-        <button type="button" class="btn btn--primary" id="startPredictCameraButton">Iniciar camara</button>
-        <button type="button" class="btn" id="takePredictPhotoButton">Capturar foto</button>
-        <button type="button" class="btn" id="retakePredictPhotoButton">Repetir</button>
-        <button type="button" class="btn btn--primary" id="predictButton">Predecir OK/KO</button>
-      </div>
-
-      <div class="kpis">
-        <article class="kpi">
-          <p class="kpi__label">Resultado</p>
-          <p class="kpi__value" id="predictLabel">-</p>
-        </article>
-        <article class="kpi">
-          <p class="kpi__label">Confianza</p>
-          <p class="kpi__value" id="predictConfidence">-</p>
-        </article>
-      </div>
+        <div class="kpis kpis--result">
+          <article class="kpi kpi--result">
+            <p class="kpi__label">Resultado</p>
+            <p class="kpi__value" id="predictLabel">-</p>
+          </article>
+          <article class="kpi">
+            <p class="kpi__label">Confianza</p>
+            <p class="kpi__value" id="predictConfidence">-</p>
+          </article>
+        </div>
+      </section>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
-  <script src="./app.js?v=20260421-v1.15.0"></script>
+  <script src="./app.js?v=20260421-v1.16.0"></script>
 </body>
 </html>

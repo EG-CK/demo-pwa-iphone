@@ -1,13 +1,14 @@
-﻿(function () {
+(function () {
   var STORAGE_KEY = "hand-ai-js-dataset-v1";
   var MODEL_KEY = "indexeddb://hand-ai-js-model";
   var IMAGE_SIZE = 96;
+  var MIN_SAMPLES_PER_CLASS = 5;
 
   var state = {
+    activeScreen: "training",
     stream: null,
-    imageData: "",
-    predictStream: null,
-    predictImageData: "",
+    trainingImageData: "",
+    evaluationImageData: "",
     samples: [],
     model: null,
     training: false,
@@ -15,32 +16,36 @@
   };
 
   var elements = {
-    cameraVideo: document.getElementById("cameraVideo"),
-    snapshotCanvas: document.getElementById("snapshotCanvas"),
+    tabButtons: document.querySelectorAll("[data-screen]"),
+    trainingScreen: document.getElementById("trainingScreen"),
+    evaluationScreen: document.getElementById("evaluationScreen"),
+    trainingVideo: document.getElementById("trainingVideo"),
+    trainingCanvas: document.getElementById("trainingCanvas"),
+    evaluationVideo: document.getElementById("evaluationVideo"),
+    evaluationCanvas: document.getElementById("evaluationCanvas"),
     captureStatus: document.getElementById("captureStatus"),
+    predictStatus: document.getElementById("predictStatus"),
     modelState: document.getElementById("modelState"),
     totalCount: document.getElementById("totalCount"),
     okCount: document.getElementById("okCount"),
     koCount: document.getElementById("koCount"),
+    trainingReadiness: document.getElementById("trainingReadiness"),
     epochsInput: document.getElementById("epochsInput"),
     batchInput: document.getElementById("batchInput"),
     trainStatus: document.getElementById("trainStatus"),
-    predictStatus: document.getElementById("predictStatus"),
-    predictVideo: document.getElementById("predictVideo"),
-    predictCanvas: document.getElementById("predictCanvas"),
+    trainingProgress: document.getElementById("trainingProgress"),
+    trainingDetail: document.getElementById("trainingDetail"),
     predictLabel: document.getElementById("predictLabel"),
     predictConfidence: document.getElementById("predictConfidence"),
-    startCameraButton: document.getElementById("startCameraButton"),
-    takePhotoButton: document.getElementById("takePhotoButton"),
-    retakeButton: document.getElementById("retakeButton"),
+    takeTrainingPhotoButton: document.getElementById("takeTrainingPhotoButton"),
+    retakeTrainingButton: document.getElementById("retakeTrainingButton"),
     saveOkButton: document.getElementById("saveOkButton"),
     saveKoButton: document.getElementById("saveKoButton"),
     trainButton: document.getElementById("trainButton"),
     deleteDataButton: document.getElementById("deleteDataButton"),
     deleteModelButton: document.getElementById("deleteModelButton"),
-    startPredictCameraButton: document.getElementById("startPredictCameraButton"),
-    takePredictPhotoButton: document.getElementById("takePredictPhotoButton"),
-    retakePredictPhotoButton: document.getElementById("retakePredictPhotoButton"),
+    takeEvaluationPhotoButton: document.getElementById("takeEvaluationPhotoButton"),
+    retakeEvaluationButton: document.getElementById("retakeEvaluationButton"),
     predictButton: document.getElementById("predictButton")
   };
 
@@ -50,24 +55,78 @@
     bindEvents();
     loadSamples();
     renderCounts();
+    renderTrainingReadiness();
     updateButtons();
     await loadModel();
+    await openCameraForActiveScreen();
     window.addEventListener("beforeunload", stopStream);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden && !state.stream) {
+        openCameraForActiveScreen();
+      }
+    });
   }
 
   function bindEvents() {
-    elements.startCameraButton.addEventListener("click", startCamera);
-    elements.takePhotoButton.addEventListener("click", takePhoto);
-    elements.retakeButton.addEventListener("click", retakePhoto);
+    elements.tabButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        switchScreen(button.dataset.screen);
+      });
+    });
+    elements.takeTrainingPhotoButton.addEventListener("click", takeTrainingPhoto);
+    elements.retakeTrainingButton.addEventListener("click", retakeTrainingPhoto);
     elements.saveOkButton.addEventListener("click", function () { saveSample("ok"); });
     elements.saveKoButton.addEventListener("click", function () { saveSample("ko"); });
     elements.trainButton.addEventListener("click", trainModel);
-    elements.startPredictCameraButton.addEventListener("click", startPredictCamera);
-    elements.takePredictPhotoButton.addEventListener("click", takePredictPhoto);
-    elements.retakePredictPhotoButton.addEventListener("click", retakePredictPhoto);
-    elements.predictButton.addEventListener("click", predictSnapshot);
     elements.deleteDataButton.addEventListener("click", clearDataset);
     elements.deleteModelButton.addEventListener("click", clearModel);
+    elements.takeEvaluationPhotoButton.addEventListener("click", takeEvaluationPhoto);
+    elements.retakeEvaluationButton.addEventListener("click", retakeEvaluationPhoto);
+    elements.predictButton.addEventListener("click", predictSnapshot);
+  }
+
+  async function switchScreen(screenName) {
+    if (state.activeScreen === screenName) {
+      return;
+    }
+
+    stopStream();
+    state.activeScreen = screenName;
+    elements.trainingScreen.hidden = screenName !== "training";
+    elements.evaluationScreen.hidden = screenName !== "evaluation";
+    elements.tabButtons.forEach(function (button) {
+      button.classList.toggle("is-active", button.dataset.screen === screenName);
+    });
+    updateButtons();
+    await openCameraForActiveScreen();
+  }
+
+  async function openCameraForActiveScreen() {
+    var videoElement = state.activeScreen === "training" ? elements.trainingVideo : elements.evaluationVideo;
+    var canvasElement = state.activeScreen === "training" ? elements.trainingCanvas : elements.evaluationCanvas;
+    var statusElement = state.activeScreen === "training" ? elements.captureStatus : elements.predictStatus;
+
+    try {
+      stopStream();
+      statusElement.textContent = "Abriendo camara...";
+      state.stream = await requestCameraStream();
+      prepareVideoElement(videoElement);
+      videoElement.srcObject = state.stream;
+      await videoElement.play();
+      canvasElement.hidden = true;
+      videoElement.hidden = false;
+      if (state.activeScreen === "training") {
+        state.trainingImageData = "";
+        statusElement.textContent = "Camara lista. Captura una muestra OK o KO.";
+      } else {
+        state.evaluationImageData = "";
+        statusElement.textContent = "Camara lista. Captura una foto para evaluar.";
+      }
+      updateButtons();
+    } catch (error) {
+      statusElement.textContent = cameraErrorMessage(error);
+      updateButtons();
+    }
   }
 
   function loadSamples() {
@@ -83,143 +142,117 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.samples));
   }
 
-  async function startCamera() {
-    try {
-      stopStream();
-      state.stream = await requestCameraStream();
-      prepareVideoElement(elements.cameraVideo);
-      elements.cameraVideo.srcObject = state.stream;
-      await elements.cameraVideo.play();
-      elements.snapshotCanvas.hidden = true;
-      elements.cameraVideo.hidden = false;
-      state.imageData = "";
-      elements.captureStatus.textContent = "Camara lista. Captura una foto de la mano.";
-      updateButtons();
-    } catch (error) {
-      elements.captureStatus.textContent = cameraErrorMessage(error);
-      updateButtons();
-    }
-  }
-
-  function takePhoto() {
-    if (!state.stream) {
+  function takeTrainingPhoto() {
+    if (!state.stream || state.activeScreen !== "training") {
       return;
     }
 
-    var width = elements.cameraVideo.videoWidth || 1280;
-    var height = elements.cameraVideo.videoHeight || 720;
-    elements.snapshotCanvas.width = width;
-    elements.snapshotCanvas.height = height;
-    var context = elements.snapshotCanvas.getContext("2d");
-    context.drawImage(elements.cameraVideo, 0, 0, width, height);
-    state.imageData = resizeDataUrl(elements.snapshotCanvas);
-
-    var preview = new Image();
-    preview.onload = function () {
-      elements.snapshotCanvas.width = preview.width;
-      elements.snapshotCanvas.height = preview.height;
-      var previewContext = elements.snapshotCanvas.getContext("2d");
-      previewContext.drawImage(preview, 0, 0);
-    };
-    preview.src = state.imageData;
-
-    elements.cameraVideo.hidden = true;
-    elements.snapshotCanvas.hidden = false;
-    elements.captureStatus.textContent = "Foto capturada. Guardala como OK o KO.";
+    state.trainingImageData = captureFrame(elements.trainingVideo, elements.trainingCanvas);
+    elements.trainingVideo.hidden = true;
+    elements.trainingCanvas.hidden = false;
+    elements.captureStatus.textContent = "Foto capturada. Guardala como muestra OK o KO.";
     updateButtons();
   }
 
-  function retakePhoto() {
-    state.imageData = "";
-    elements.snapshotCanvas.hidden = true;
-    elements.cameraVideo.hidden = false;
-    elements.captureStatus.textContent = "Camara lista. Captura una foto de la mano.";
+  function retakeTrainingPhoto() {
+    state.trainingImageData = "";
+    elements.trainingCanvas.hidden = true;
+    elements.trainingVideo.hidden = false;
+    elements.captureStatus.textContent = "Camara lista. Captura una muestra OK o KO.";
     updateButtons();
   }
 
   function saveSample(label) {
-    if (!state.imageData) {
+    if (!state.trainingImageData) {
       return;
     }
 
     state.samples.unshift({
       id: String(Date.now()) + "-" + Math.random().toString(16).slice(2),
       label: label,
-      imageData: state.imageData,
+      imageData: state.trainingImageData,
       createdAt: new Date().toISOString()
     });
     state.samples = state.samples.slice(0, 600);
     persistSamples();
     renderCounts();
+    renderTrainingReadiness();
     elements.captureStatus.textContent = "Muestra guardada como " + label.toUpperCase() + ".";
-    retakePhoto();
+    retakeTrainingPhoto();
   }
 
-  async function startPredictCamera() {
-    try {
-      stopStream();
-      state.predictStream = await requestCameraStream();
-      prepareVideoElement(elements.predictVideo);
-      elements.predictVideo.srcObject = state.predictStream;
-      await elements.predictVideo.play();
-      elements.predictCanvas.hidden = true;
-      elements.predictVideo.hidden = false;
-      state.predictImageData = "";
-      elements.predictStatus.textContent = "Camara lista. Captura una foto para predecir.";
-      updateButtons();
-    } catch (error) {
-      elements.predictStatus.textContent = cameraErrorMessage(error);
-      updateButtons();
-    }
-  }
-
-  function takePredictPhoto() {
-    if (!state.predictStream) {
+  function takeEvaluationPhoto() {
+    if (!state.stream || state.activeScreen !== "evaluation") {
       return;
     }
 
-    var width = elements.predictVideo.videoWidth || 1280;
-    var height = elements.predictVideo.videoHeight || 720;
-    elements.predictCanvas.width = width;
-    elements.predictCanvas.height = height;
-    var context = elements.predictCanvas.getContext("2d");
-    context.drawImage(elements.predictVideo, 0, 0, width, height);
-    state.predictImageData = resizeDataUrl(elements.predictCanvas);
-
-    var preview = new Image();
-    preview.onload = function () {
-      elements.predictCanvas.width = preview.width;
-      elements.predictCanvas.height = preview.height;
-      var previewContext = elements.predictCanvas.getContext("2d");
-      previewContext.drawImage(preview, 0, 0);
-    };
-    preview.src = state.predictImageData;
-
-    elements.predictVideo.hidden = true;
-    elements.predictCanvas.hidden = false;
+    state.evaluationImageData = captureFrame(elements.evaluationVideo, elements.evaluationCanvas);
+    elements.evaluationVideo.hidden = true;
+    elements.evaluationCanvas.hidden = false;
+    elements.predictLabel.textContent = "-";
+    elements.predictConfidence.textContent = "-";
     elements.predictStatus.textContent = state.model
       ? "Foto capturada. Pulsa Predecir OK/KO."
-      : "Foto capturada. Puedes pulsar Predecir OK/KO cuando tengas un modelo entrenado.";
+      : "Foto capturada. Entrena un modelo antes de predecir.";
     updateButtons();
   }
 
-  function retakePredictPhoto() {
-    state.predictImageData = "";
-    elements.predictCanvas.hidden = true;
-    elements.predictVideo.hidden = !state.predictStream;
-    elements.predictStatus.textContent = state.predictStream
-      ? "Camara lista. Captura una foto para predecir."
-      : "Inicia la camara para tomar una foto y predecir.";
+  function retakeEvaluationPhoto() {
+    state.evaluationImageData = "";
+    elements.evaluationCanvas.hidden = true;
+    elements.evaluationVideo.hidden = false;
+    elements.predictLabel.textContent = "-";
+    elements.predictConfidence.textContent = "-";
+    elements.predictStatus.textContent = "Camara lista. Captura una foto para evaluar.";
     updateButtons();
+  }
+
+  function captureFrame(videoElement, canvasElement) {
+    var width = videoElement.videoWidth || 1280;
+    var height = videoElement.videoHeight || 720;
+    canvasElement.width = width;
+    canvasElement.height = height;
+    var context = canvasElement.getContext("2d");
+    context.drawImage(videoElement, 0, 0, width, height);
+    var imageData = resizeDataUrl(canvasElement);
+
+    var preview = new Image();
+    preview.onload = function () {
+      canvasElement.width = preview.width;
+      canvasElement.height = preview.height;
+      canvasElement.getContext("2d").drawImage(preview, 0, 0);
+    };
+    preview.src = imageData;
+    return imageData;
   }
 
   function renderCounts() {
     var counts = getSampleCounts();
-    var ok = counts.ok;
-    var ko = counts.ko;
     elements.totalCount.textContent = String(state.samples.length);
-    elements.okCount.textContent = String(ok);
-    elements.koCount.textContent = String(ko);
+    elements.okCount.textContent = String(counts.ok);
+    elements.koCount.textContent = String(counts.ko);
+  }
+
+  function renderTrainingReadiness() {
+    var counts = getSampleCounts();
+    var missingOk = Math.max(0, MIN_SAMPLES_PER_CLASS - counts.ok);
+    var missingKo = Math.max(0, MIN_SAMPLES_PER_CLASS - counts.ko);
+
+    if (missingOk === 0 && missingKo === 0) {
+      elements.trainingReadiness.textContent = "Listo para entrenar. Ya tienes suficientes muestras OK y KO.";
+      elements.trainStatus.textContent = state.model ? "Modelo entrenado y guardado en este navegador." : "Puedes entrenar el modelo cuando quieras.";
+      return;
+    }
+
+    var parts = [];
+    if (missingOk > 0) {
+      parts.push(missingOk + " OK");
+    }
+    if (missingKo > 0) {
+      parts.push(missingKo + " KO");
+    }
+    elements.trainingReadiness.textContent = "Faltan " + parts.join(" y ") + " para poder entrenar.";
+    elements.trainStatus.textContent = "Necesitas minimo " + MIN_SAMPLES_PER_CLASS + " OK y " + MIN_SAMPLES_PER_CLASS + " KO.";
   }
 
   async function trainModel() {
@@ -228,10 +261,9 @@
       return false;
     }
 
-    var okSamples = state.samples.filter(function (item) { return item.label === "ok"; });
-    var koSamples = state.samples.filter(function (item) { return item.label === "ko"; });
-    if (okSamples.length < 5 || koSamples.length < 5) {
-      elements.trainStatus.textContent = "Necesitas al menos 5 muestras OK y 5 muestras KO.";
+    var counts = getSampleCounts();
+    if (counts.ok < MIN_SAMPLES_PER_CLASS || counts.ko < MIN_SAMPLES_PER_CLASS) {
+      renderTrainingReadiness();
       return false;
     }
 
@@ -239,8 +271,11 @@
     var batchSize = Math.max(2, Math.min(32, Number(elements.batchInput.value) || 8));
 
     state.training = true;
-    updateButtons();
+    elements.trainingProgress.style.width = "0%";
+    elements.modelState.textContent = "Entrenando...";
     elements.trainStatus.textContent = "Preparando dataset...";
+    elements.trainingDetail.textContent = "Inicio de entrenamiento.";
+    updateButtons();
 
     var xs = null;
     var ys = null;
@@ -250,6 +285,9 @@
       xs = tensors.xs;
       ys = tensors.ys;
 
+      if (state.model) {
+        state.model.dispose();
+      }
       state.model = buildModel();
       state.model.compile({
         optimizer: tf.train.adam(0.001),
@@ -257,7 +295,6 @@
         metrics: ["accuracy"]
       });
 
-      elements.modelState.textContent = "Entrenando...";
       await state.model.fit(xs, ys, {
         epochs: epochs,
         batchSize: Math.min(batchSize, state.samples.length),
@@ -267,17 +304,24 @@
           onEpochEnd: function (epoch, logs) {
             var trainAcc = logs.acc || logs.accuracy || 0;
             var valAcc = logs.val_acc || logs.val_accuracy || 0;
-            elements.trainStatus.textContent = "Epoca " + (epoch + 1) + "/" + epochs + " | acc " + Math.round(trainAcc * 100) + "% | val " + Math.round(valAcc * 100) + "%";
+            var progress = Math.round(((epoch + 1) / epochs) * 100);
+            elements.trainingProgress.style.width = progress + "%";
+            elements.trainStatus.textContent = "Entrenando: epoca " + (epoch + 1) + " de " + epochs + ".";
+            elements.trainingDetail.textContent = "Precision " + Math.round(trainAcc * 100) + "% | Validacion " + Math.round(valAcc * 100) + "%";
           }
         }
       });
 
       await state.model.save(MODEL_KEY);
       elements.modelState.textContent = "Modelo entrenado";
-      elements.trainStatus.textContent = "Entrenamiento completado y modelo guardado en el navegador.";
+      elements.trainStatus.textContent = "Modelo entrenado y guardado en este movil.";
+      elements.trainingDetail.textContent = "Listo para ir a Evaluacion.";
+      elements.trainingProgress.style.width = "100%";
       return true;
     } catch (error) {
+      elements.modelState.textContent = "Error al entrenar";
       elements.trainStatus.textContent = "No se pudo entrenar: " + (error && error.message ? error.message : "error desconocido");
+      elements.trainingDetail.textContent = "Revisa muestras e intenta de nuevo.";
       return false;
     } finally {
       if (xs) {
@@ -287,6 +331,7 @@
         ys.dispose();
       }
       state.training = false;
+      renderTrainingReadiness();
       updateButtons();
     }
   }
@@ -301,46 +346,37 @@
     try {
       state.model = await tf.loadLayersModel(MODEL_KEY);
       elements.modelState.textContent = "Modelo cargado";
+      elements.trainStatus.textContent = "Modelo cargado desde este navegador.";
+      elements.trainingDetail.textContent = "Listo para evaluar nuevas fotos.";
     } catch (error) {
       elements.modelState.textContent = "Modelo sin cargar";
     }
+    renderTrainingReadiness();
     updateButtons();
   }
 
   async function predictSnapshot() {
-    if (!state.predictImageData) {
+    if (!state.evaluationImageData) {
       elements.predictStatus.textContent = "Captura una foto antes de predecir.";
       return;
     }
-
     if (!window.tf) {
       elements.predictStatus.textContent = "No se pudo cargar TensorFlow. Abre la app con internet y actualiza.";
+      return;
+    }
+    if (!state.model) {
+      elements.predictStatus.textContent = "No hay modelo entrenado. Ve a Entrenamiento y pulsa Entrenar modelo.";
       return;
     }
 
     state.predicting = true;
     elements.predictLabel.textContent = "-";
     elements.predictConfidence.textContent = "-";
-    elements.predictStatus.textContent = "Preparando prediccion...";
+    elements.predictStatus.textContent = "Analizando foto...";
     updateButtons();
 
     try {
-      if (!state.model) {
-        var counts = getSampleCounts();
-        if (counts.ok < 5 || counts.ko < 5) {
-          elements.predictStatus.textContent = "Primero guarda minimo 5 fotos OK y 5 fotos KO, y entrena el modelo.";
-          return;
-        }
-
-        elements.predictStatus.textContent = "Modelo no entrenado. Entrenando automaticamente...";
-        var trained = await trainModel();
-        if (!trained || !state.model) {
-          elements.predictStatus.textContent = "No se pudo preparar el modelo para predecir.";
-          return;
-        }
-      }
-
-      await runPrediction(state.predictImageData);
+      await runPrediction(state.evaluationImageData);
     } catch (error) {
       elements.predictStatus.textContent = "No se pudo predecir: " + (error && error.message ? error.message : "error desconocido");
     } finally {
@@ -372,25 +408,21 @@
   }
 
   async function clearModel() {
-    if (!window.tf) {
-      state.model = null;
-      elements.modelState.textContent = "Modelo sin cargar";
-      elements.predictStatus.textContent = "Modelo eliminado de la pantalla.";
-      updateButtons();
-      return;
-    }
-
-    try {
-      await tf.io.removeModel(MODEL_KEY);
-    } catch (error) {
-      // no-op
+    if (window.tf) {
+      try {
+        await tf.io.removeModel(MODEL_KEY);
+      } catch (error) {
+        // Sin modelo previo, no hay nada que borrar.
+      }
     }
     if (state.model) {
       state.model.dispose();
     }
     state.model = null;
     elements.modelState.textContent = "Modelo sin cargar";
-    elements.predictStatus.textContent = "Modelo eliminado del navegador.";
+    elements.trainStatus.textContent = "Modelo eliminado del navegador.";
+    elements.trainingDetail.textContent = "Entrena de nuevo para evaluar.";
+    elements.trainingProgress.style.width = "0%";
     updateButtons();
   }
 
@@ -398,7 +430,9 @@
     state.samples = [];
     persistSamples();
     renderCounts();
-    elements.trainStatus.textContent = "Dataset borrado.";
+    renderTrainingReadiness();
+    elements.trainingProgress.style.width = "0%";
+    elements.trainingDetail.textContent = "Muestras borradas.";
     updateButtons();
   }
 
@@ -441,7 +475,6 @@
     var xs = tf.stack(imageTensors);
     imageTensors.forEach(function (tensor) { tensor.dispose(); });
     var ys = tf.tensor2d(labels, [labels.length, 1], "float32");
-
     return { xs: xs, ys: ys };
   }
 
@@ -470,8 +503,7 @@
     var target = document.createElement("canvas");
     target.width = IMAGE_SIZE;
     target.height = IMAGE_SIZE;
-    var context = target.getContext("2d");
-    context.drawImage(sourceCanvas, 0, 0, IMAGE_SIZE, IMAGE_SIZE);
+    target.getContext("2d").drawImage(sourceCanvas, 0, 0, IMAGE_SIZE, IMAGE_SIZE);
     return target.toDataURL("image/jpeg", 0.86);
   }
 
@@ -493,11 +525,7 @@
       if (error && (error.name === "NotAllowedError" || error.name === "SecurityError")) {
         throw error;
       }
-
-      return navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false
-      });
+      return navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     }
   }
 
@@ -512,11 +540,9 @@
     if (!window.isSecureContext) {
       return "La camara solo funciona en HTTPS. Abre la app desde GitHub Pages o como PWA instalada.";
     }
-
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       return "Este navegador no permite abrir la camara desde esta pagina.";
     }
-
     var name = error && error.name ? error.name : "";
     if (name === "NotAllowedError" || name === "SecurityError") {
       return "Permiso de camara denegado. Activalo en los permisos del navegador y vuelve a intentar.";
@@ -527,7 +553,6 @@
     if (name === "NotReadableError" || name === "TrackStartError") {
       return "La camara esta ocupada por otra app. Cierrala y vuelve a intentar.";
     }
-
     return "No se pudo abrir la camara. Revisa permisos del navegador.";
   }
 
@@ -536,34 +561,25 @@
       state.stream.getTracks().forEach(function (track) { track.stop(); });
       state.stream = null;
     }
-    stopPredictStream();
-  }
-
-  function stopPredictStream() {
-    if (state.predictStream) {
-      state.predictStream.getTracks().forEach(function (track) { track.stop(); });
-      state.predictStream = null;
-    }
   }
 
   function updateButtons() {
-    var hasImage = Boolean(state.imageData);
-    var hasPredictImage = Boolean(state.predictImageData);
-    var hasModel = Boolean(state.model);
+    var hasTrainingImage = Boolean(state.trainingImageData);
+    var hasEvaluationImage = Boolean(state.evaluationImageData);
     var hasStream = Boolean(state.stream);
-    var hasPredictStream = Boolean(state.predictStream);
+    var busy = state.training || state.predicting;
+    var counts = getSampleCounts();
+    var canTrain = counts.ok >= MIN_SAMPLES_PER_CLASS && counts.ko >= MIN_SAMPLES_PER_CLASS;
 
-    elements.takePhotoButton.disabled = !hasStream || state.training || state.predicting;
-    elements.retakeButton.disabled = !hasImage || state.training || state.predicting;
-    elements.saveOkButton.disabled = !hasImage || state.training || state.predicting;
-    elements.saveKoButton.disabled = !hasImage || state.training || state.predicting;
-    elements.trainButton.disabled = state.training || state.predicting;
-    elements.takePredictPhotoButton.disabled = !hasPredictStream || state.training || state.predicting;
-    elements.retakePredictPhotoButton.disabled = !hasPredictImage || state.training || state.predicting;
-    elements.predictButton.disabled = !hasPredictImage || state.training || state.predicting;
-    elements.deleteModelButton.disabled = state.training || state.predicting;
-    elements.deleteDataButton.disabled = state.training || state.predicting;
-    elements.startCameraButton.disabled = state.training || state.predicting;
-    elements.startPredictCameraButton.disabled = state.training || state.predicting;
+    elements.takeTrainingPhotoButton.disabled = state.activeScreen !== "training" || !hasStream || busy;
+    elements.retakeTrainingButton.disabled = !hasTrainingImage || busy;
+    elements.saveOkButton.disabled = !hasTrainingImage || busy;
+    elements.saveKoButton.disabled = !hasTrainingImage || busy;
+    elements.trainButton.disabled = !canTrain || busy;
+    elements.deleteModelButton.disabled = busy;
+    elements.deleteDataButton.disabled = busy;
+    elements.takeEvaluationPhotoButton.disabled = state.activeScreen !== "evaluation" || !hasStream || busy;
+    elements.retakeEvaluationButton.disabled = !hasEvaluationImage || busy;
+    elements.predictButton.disabled = !hasEvaluationImage || busy;
   }
 }());
