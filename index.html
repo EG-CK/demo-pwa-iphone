@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-app.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260421-v1.10.0">
+  <link rel="stylesheet" href="styles.css?v=20260421-v1.11.0">
   <title>Pulse OEE Demo</title>
 </head>
 <body>
@@ -36,15 +36,10 @@
             <h3>Lector QR</h3>
             <p class="menu-card__text">Abre la camara, encuadra el codigo y guarda lecturas QR sin datos de OEE ni turnos.</p>
           </button>
-          <button type="button" class="menu-card" id="openAiView">
-            <p class="menu-card__eyebrow">IA Local</p>
-            <h3>Mano OK / KO</h3>
-            <p class="menu-card__text">Accede al capturador, al entrenamiento y a la verificacion del modelo para signos de mano.</p>
-          </button>
           <button type="button" class="menu-card menu-card--accent" id="openAiJsApp">
-            <p class="menu-card__eyebrow">IA Web</p>
-            <h3>Mano OK / KO JS</h3>
-            <p class="menu-card__text">Modo 100% navegador con entrenamiento y prediccion local sin servidor Python.</p>
+            <p class="menu-card__eyebrow">IA movil</p>
+            <h3>Mano OK / KO</h3>
+            <p class="menu-card__text">Captura muestras, entrena y predice desde el movil sin servidor externo.</p>
           </button>
         </div>
       </section>
@@ -139,61 +134,6 @@
           </div>
         </section>
       </section>
-
-      <section id="aiView" hidden>
-        <div class="module-head">
-          <button type="button" class="module-back" data-open-view="home">Volver al menu</button>
-          <div>
-            <p class="section-label">IA Local</p>
-            <h2>Mano OK / KO</h2>
-          </div>
-        </div>
-
-        <section class="panel panel--overview">
-          <div class="section-head">
-            <div>
-              <p class="section-label">Captura movil</p>
-              <h2>Flujo IA OK / KO</h2>
-            </div>
-            <p class="mini-note">Web movil limpia</p>
-          </div>
-
-          <div class="field-group">
-            <label for="aiBaseUrl">URL base del backend</label>
-            <input id="aiBaseUrl" type="text" value="http://127.0.0.1:8765" placeholder="http://127.0.0.1:8765">
-          </div>
-
-          <div class="scanner-actions">
-            <button type="button" class="action-button action-button--primary" id="openAiCapture">Abrir capturador movil</button>
-            <button type="button" class="action-button action-button--ghost" id="openAiConsole">Abrir consola backend</button>
-          </div>
-
-          <div class="table-card">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Paso</th>
-                  <th>Que hacer</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>1</td>
-                  <td>Arranca el backend en tu PC con <code>python ai_trainer\server.py</code>.</td>
-                </tr>
-                <tr>
-                  <td>2</td>
-                  <td>Desde movil usa solo <strong>Abrir capturador movil</strong> para tomar muestras.</td>
-                </tr>
-                <tr>
-                  <td>3</td>
-                  <td>El entrenamiento y verificacion se hacen en la <strong>consola backend</strong> separada.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </section>
     </main>
 
     <footer class="app-footer">
@@ -203,6 +143,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.legacy.min.js"></script>
-  <script src="app.js?v=20260421-v1.10.0"></script>
+  <script src="app.js?v=20260421-v1.11.0"></script>
 </body>
 </html>

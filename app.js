@@ -1,6 +1,6 @@
 (function () {
-  const APP_VERSION = "v1.10.0 | 21/04/2026";
-  const BUILD_TOKEN = "20260421-v1.10.0";
+  const APP_VERSION = "v1.11.0 | 21/04/2026";
+  const BUILD_TOKEN = "20260421-v1.11.0";
   const QR_CAPTURE_WINDOW_MS = 5000;
   const QR_CAPTURE_RETRY_MS = 180;
   const MAX_TONS = 10;
@@ -35,10 +35,8 @@
     homeView: document.getElementById("homeView"),
     oeeView: document.getElementById("oeeView"),
     qrView: document.getElementById("qrView"),
-    aiView: document.getElementById("aiView"),
     openOeeView: document.getElementById("openOeeView"),
     openQrView: document.getElementById("openQrView"),
-    openAiView: document.getElementById("openAiView"),
     openAiJsApp: document.getElementById("openAiJsApp"),
     viewButtons: document.querySelectorAll("[data-open-view]"),
     installState: document.getElementById("installState"),
@@ -53,10 +51,7 @@
     startScanButton: document.getElementById("startScanButton"),
     captureQrButton: document.getElementById("captureQrButton"),
     stopScanButton: document.getElementById("stopScanButton"),
-    qrImageInput: document.getElementById("qrImageInput"),
-    aiBaseUrl: document.getElementById("aiBaseUrl"),
-    openAiCapture: document.getElementById("openAiCapture"),
-    openAiConsole: document.getElementById("openAiConsole")
+    qrImageInput: document.getElementById("qrImageInput")
   };
 
   const dailyHistory = buildHistory();
@@ -166,10 +161,6 @@
       openView("qr");
     });
 
-    elements.openAiView.addEventListener("click", function () {
-      openView("ai");
-    });
-
     elements.openAiJsApp.addEventListener("click", function () {
       window.location.href = "ai_web/index.html";
     });
@@ -216,14 +207,6 @@
       event.target.value = "";
     });
 
-    elements.openAiCapture.addEventListener("click", function () {
-      openAiPath("/capture");
-    });
-
-    elements.openAiConsole.addEventListener("click", function () {
-      openAiPath("/console");
-    });
-
   }
 
   function openView(viewName) {
@@ -239,22 +222,6 @@
     elements.homeView.hidden = state.currentView !== "home";
     elements.oeeView.hidden = state.currentView !== "oee";
     elements.qrView.hidden = state.currentView !== "qr";
-    elements.aiView.hidden = state.currentView !== "ai";
-  }
-
-  function normalizeAiBaseUrl() {
-    var raw = String(elements.aiBaseUrl.value || "").trim();
-    if (!raw) {
-      raw = "http://127.0.0.1:8765";
-      elements.aiBaseUrl.value = raw;
-    }
-    return raw.replace(/\/+$/, "");
-  }
-
-  function openAiPath(path) {
-    var baseUrl = normalizeAiBaseUrl();
-    var url = baseUrl + path;
-    window.open(url, "_blank", "noopener");
   }
 
   function renderBoards() {

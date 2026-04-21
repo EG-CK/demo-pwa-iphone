@@ -6,6 +6,8 @@
   var state = {
     stream: null,
     imageData: "",
+    predictStream: null,
+    predictImageData: "",
     samples: [],
     model: null,
     training: false
@@ -23,6 +25,8 @@
     batchInput: document.getElementById("batchInput"),
     trainStatus: document.getElementById("trainStatus"),
     predictStatus: document.getElementById("predictStatus"),
+    predictVideo: document.getElementById("predictVideo"),
+    predictCanvas: document.getElementById("predictCanvas"),
     predictLabel: document.getElementById("predictLabel"),
     predictConfidence: document.getElementById("predictConfidence"),
     startCameraButton: document.getElementById("startCameraButton"),
@@ -33,10 +37,10 @@
     trainButton: document.getElementById("trainButton"),
     deleteDataButton: document.getElementById("deleteDataButton"),
     deleteModelButton: document.getElementById("deleteModelButton"),
-    predictCameraInput: document.getElementById("predictCameraInput"),
-    predictButton: document.getElementById("predictButton"),
-    predictImageInput: document.getElementById("predictImageInput"),
-    predictFileButton: document.getElementById("predictFileButton")
+    startPredictCameraButton: document.getElementById("startPredictCameraButton"),
+    takePredictPhotoButton: document.getElementById("takePredictPhotoButton"),
+    retakePredictPhotoButton: document.getElementById("retakePredictPhotoButton"),
+    predictButton: document.getElementById("predictButton")
   };
 
   init();
@@ -57,14 +61,10 @@
     elements.saveOkButton.addEventListener("click", function () { saveSample("ok"); });
     elements.saveKoButton.addEventListener("click", function () { saveSample("ko"); });
     elements.trainButton.addEventListener("click", trainModel);
+    elements.startPredictCameraButton.addEventListener("click", startPredictCamera);
+    elements.takePredictPhotoButton.addEventListener("click", takePredictPhoto);
+    elements.retakePredictPhotoButton.addEventListener("click", retakePredictPhoto);
     elements.predictButton.addEventListener("click", predictSnapshot);
-    elements.predictFileButton.addEventListener("click", predictFromFile);
-    elements.predictCameraInput.addEventListener("change", function () {
-      predictFromInput(elements.predictCameraInput);
-    });
-    elements.predictImageInput.addEventListener("change", function () {
-      predictFromInput(elements.predictImageInput);
-    });
     elements.deleteDataButton.addEventListener("click", clearDataset);
     elements.deleteModelButton.addEventListener("click", clearModel);
   }
@@ -155,6 +155,65 @@
     retakePhoto();
   }
 
+  async function startPredictCamera() {
+    try {
+      stopStream();
+      state.predictStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false
+      });
+      elements.predictVideo.srcObject = state.predictStream;
+      await elements.predictVideo.play();
+      elements.predictCanvas.hidden = true;
+      elements.predictVideo.hidden = false;
+      state.predictImageData = "";
+      elements.predictStatus.textContent = "Camara lista. Captura una foto para predecir.";
+      updateButtons();
+    } catch (error) {
+      elements.predictStatus.textContent = "No se pudo abrir la camara.";
+    }
+  }
+
+  function takePredictPhoto() {
+    if (!state.predictStream) {
+      return;
+    }
+
+    var width = elements.predictVideo.videoWidth || 1280;
+    var height = elements.predictVideo.videoHeight || 720;
+    elements.predictCanvas.width = width;
+    elements.predictCanvas.height = height;
+    var context = elements.predictCanvas.getContext("2d");
+    context.drawImage(elements.predictVideo, 0, 0, width, height);
+    state.predictImageData = resizeDataUrl(elements.predictCanvas);
+
+    var preview = new Image();
+    preview.onload = function () {
+      elements.predictCanvas.width = preview.width;
+      elements.predictCanvas.height = preview.height;
+      var previewContext = elements.predictCanvas.getContext("2d");
+      previewContext.drawImage(preview, 0, 0);
+    };
+    preview.src = state.predictImageData;
+
+    elements.predictVideo.hidden = true;
+    elements.predictCanvas.hidden = false;
+    elements.predictStatus.textContent = state.model
+      ? "Foto capturada. Pulsa Predecir OK/KO."
+      : "Foto capturada. Entrena un modelo antes de predecir.";
+    updateButtons();
+  }
+
+  function retakePredictPhoto() {
+    state.predictImageData = "";
+    elements.predictCanvas.hidden = true;
+    elements.predictVideo.hidden = !state.predictStream;
+    elements.predictStatus.textContent = state.predictStream
+      ? "Camara lista. Captura una foto para predecir."
+      : "Inicia la camara para tomar una foto y predecir.";
+    updateButtons();
+  }
+
   function renderCounts() {
     var ok = state.samples.filter(function (item) { return item.label === "ok"; }).length;
     var ko = state.samples.filter(function (item) { return item.label === "ko"; }).length;
@@ -240,40 +299,15 @@
       elements.predictStatus.textContent = "Entrena o carga un modelo antes de predecir.";
       return;
     }
-    if (!state.imageData) {
+    if (!state.predictImageData) {
       elements.predictStatus.textContent = "Captura una foto antes de predecir.";
       return;
     }
 
     try {
-      await runPrediction(state.imageData);
+      await runPrediction(state.predictImageData);
     } catch (error) {
       elements.predictStatus.textContent = "No se pudo predecir la foto.";
-    }
-  }
-
-  async function predictFromFile() {
-    await predictFromInput(elements.predictImageInput);
-  }
-
-  async function predictFromInput(inputElement) {
-    if (!state.model) {
-      elements.predictStatus.textContent = "Entrena o carga un modelo antes de predecir.";
-      return;
-    }
-
-    var file = inputElement.files && inputElement.files[0];
-    if (!file) {
-      elements.predictStatus.textContent = "Selecciona una imagen primero.";
-      return;
-    }
-
-    try {
-      var dataUrl = await fileToDataUrl(file);
-      await runPrediction(dataUrl);
-      inputElement.value = "";
-    } catch (error) {
-      elements.predictStatus.textContent = "No se pudo predecir la imagen seleccionada.";
     }
   }
 
@@ -374,19 +408,6 @@
     });
   }
 
-  function fileToDataUrl(file) {
-    return new Promise(function (resolve, reject) {
-      var reader = new FileReader();
-      reader.onload = function () {
-        resolve(String(reader.result || ""));
-      };
-      reader.onerror = function () {
-        reject(new Error("No se pudo leer el archivo."));
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-
   function resizeDataUrl(sourceCanvas) {
     var target = document.createElement("canvas");
     target.width = IMAGE_SIZE;
@@ -401,22 +422,34 @@
       state.stream.getTracks().forEach(function (track) { track.stop(); });
       state.stream = null;
     }
+    stopPredictStream();
+  }
+
+  function stopPredictStream() {
+    if (state.predictStream) {
+      state.predictStream.getTracks().forEach(function (track) { track.stop(); });
+      state.predictStream = null;
+    }
   }
 
   function updateButtons() {
     var hasImage = Boolean(state.imageData);
+    var hasPredictImage = Boolean(state.predictImageData);
     var hasModel = Boolean(state.model);
     var hasStream = Boolean(state.stream);
+    var hasPredictStream = Boolean(state.predictStream);
 
     elements.takePhotoButton.disabled = !hasStream || state.training;
     elements.retakeButton.disabled = !hasImage || state.training;
     elements.saveOkButton.disabled = !hasImage || state.training;
     elements.saveKoButton.disabled = !hasImage || state.training;
     elements.trainButton.disabled = state.training;
-    elements.predictButton.disabled = !hasModel || !hasImage || state.training;
-    elements.predictFileButton.disabled = !hasModel || state.training;
+    elements.takePredictPhotoButton.disabled = !hasPredictStream || state.training;
+    elements.retakePredictPhotoButton.disabled = !hasPredictImage || state.training;
+    elements.predictButton.disabled = !hasModel || !hasPredictImage || state.training;
     elements.deleteModelButton.disabled = state.training;
     elements.deleteDataButton.disabled = state.training;
     elements.startCameraButton.disabled = state.training;
+    elements.startPredictCameraButton.disabled = state.training;
   }
 }());

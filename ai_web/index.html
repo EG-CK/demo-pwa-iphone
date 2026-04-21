@@ -11,8 +11,8 @@
     <header class="hero">
       <div>
         <p class="eyebrow">Modo navegador</p>
-        <h1>IA Mano OK/KO (JavaScript)</h1>
-        <p class="hero__text">Captura muestras, entrena y predice en el propio navegador sin servidor Python.</p>
+        <h1>IA Mano OK/KO</h1>
+        <p class="hero__text">Captura muestras, entrena y predice en el propio navegador del movil.</p>
       </div>
       <a class="hero__link" href="../index.html">Volver al menu</a>
     </header>
@@ -86,15 +86,19 @@
         </div>
       </div>
 
-      <div class="action-row">
-        <button type="button" class="btn btn--primary" id="predictButton">Predecir foto actual</button>
-        <label class="btn" for="predictCameraInput">Tomar foto</label>
-        <label class="btn" for="predictImageInput">Elegir imagen</label>
-        <button type="button" class="btn" id="predictFileButton">Predecir imagen</button>
-        <input id="predictCameraInput" type="file" accept="image/*" capture="environment" hidden>
-        <input id="predictImageInput" type="file" accept="image/*" hidden>
+      <div class="camera-wrap">
+        <video id="predictVideo" playsinline muted hidden></video>
+        <canvas id="predictCanvas" hidden></canvas>
+        <p class="helper" id="predictStatus">Inicia la camara para tomar una foto y predecir.</p>
       </div>
-      <p class="helper" id="predictStatus">Captura una foto y ejecuta prediccion.</p>
+
+      <div class="action-row">
+        <button type="button" class="btn btn--primary" id="startPredictCameraButton">Iniciar camara</button>
+        <button type="button" class="btn" id="takePredictPhotoButton">Capturar foto</button>
+        <button type="button" class="btn" id="retakePredictPhotoButton">Repetir</button>
+        <button type="button" class="btn btn--primary" id="predictButton">Predecir OK/KO</button>
+      </div>
+
       <div class="kpis">
         <article class="kpi">
           <p class="kpi__label">Resultado</p>

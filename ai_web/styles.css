@@ -13,6 +13,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
   margin: 0;
   font-family: "Segoe UI", sans-serif;
@@ -89,7 +90,7 @@ canvas { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
 .field-grid,
 .kpis { display: grid; gap: 10px; margin-top: 14px; }
 .action-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.action-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.action-row { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .field-grid,
 .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
