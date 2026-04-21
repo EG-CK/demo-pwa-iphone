@@ -1,12 +1,12 @@
-const CACHE_NAME = "pulse-oee-demo-v21";
+const CACHE_NAME = "pulse-oee-demo-v22";
 const APP_FILES = [
   "./",
   "./index.html",
-  "./styles.css?v=20260421-v1.12.0",
-  "./app.js?v=20260421-v1.12.0",
-  "./ai_web/index.html",
-  "./ai_web/styles.css",
-  "./ai_web/app.js",
+  "./styles.css?v=20260421-v1.13.0",
+  "./app.js?v=20260421-v1.13.0",
+  "./ai_web/index.html?v=20260421-v1.13.0",
+  "./ai_web/styles.css?v=20260421-v1.13.0",
+  "./ai_web/app.js?v=20260421-v1.13.0",
   "./manifest.webmanifest",
   "./icons/icon-app.svg",
   "./icons/apple-touch-icon.svg"
@@ -59,7 +59,7 @@ self.addEventListener("fetch", function (event) {
   }
 
   event.respondWith(
-    fetch(event.request).then(function (networkResponse) {
+    fetch(event.request, { cache: isNavigation ? "reload" : "default" }).then(function (networkResponse) {
       const responseClone = networkResponse.clone();
       caches.open(CACHE_NAME).then(function (cache) {
         cache.put(event.request, responseClone);
